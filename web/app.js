@@ -75,6 +75,7 @@ import { PDFViewer } from "./pdf_viewer.js";
 import { SecondaryToolbar } from "web-secondary_toolbar";
 import { Toolbar } from "web-toolbar";
 import { ViewHistory } from "./view_history.js";
+import { play } from "./audio.js"
 
 const FORCE_PAGES_LOADED_TIMEOUT = 10000; // ms
 const WHEEL_ZOOM_DISABLED_TIMEOUT = 1000; // ms
@@ -2597,12 +2598,9 @@ function webViewerPlayAudio() {
         });
         console.log("## Text Content");
         console.log(strings.join(" "));
+        play(strings.join(" "));
         // Release page resources.
-        //page.cleanup();
-      })
-      .then(function () {
-        console.log();
-        alert("Play!");
+        page.cleanup();
       });
   });
 }
