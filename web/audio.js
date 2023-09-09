@@ -15,7 +15,7 @@
 
 const synth = window.speechSynthesis;
 
-function play(string txt) {
+function play(txt) {
   const utterThis = new SpeechSynthesisUtterance(txt);
   synth.speak(utterThis);
 }
