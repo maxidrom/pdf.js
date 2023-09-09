@@ -1960,6 +1960,7 @@ const PDFViewerApplication = {
       "switchannotationeditormode",
       webViewerSwitchAnnotationEditorMode
     );
+    eventBus._on("playaudio", webViewerPlayAudio);
     eventBus._on(
       "switchannotationeditorparams",
       webViewerSwitchAnnotationEditorParams
@@ -2580,6 +2581,30 @@ function webViewerSwitchSpreadMode(evt) {
 }
 function webViewerDocumentProperties() {
   PDFViewerApplication.pdfDocumentProperties?.open();
+}
+
+function webViewerPlayAudio() {
+  var myPdfViewer = PDFViewerApplication.pdfViewer;
+  var doc = myPdfViewer.pdfDocument;
+  return doc.getPage(PDFViewerApplication.page).then(function (page) {
+    return page
+      .getTextContent()
+      .then(function (content) {
+        // Content contains lots of information about the text layout and
+        // styles, but we need only strings at the moment
+        const strings = content.items.map(function (item) {
+          return item.str;
+        });
+        console.log("## Text Content");
+        console.log(strings.join(" "));
+        // Release page resources.
+        //page.cleanup();
+      })
+      .then(function () {
+        console.log();
+        alert("Play!");
+      });
+  });
 }
 
 function webViewerFindFromUrlHash(evt) {
