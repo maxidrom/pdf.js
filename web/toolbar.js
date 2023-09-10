@@ -79,6 +79,8 @@ class Toolbar {
         },
       },
       { element: options.play, eventName: "playaudio" },
+      { element: options.audioBack, eventName: "audioBack" },
+      { element: options.audioForward, eventName: "audioForward" },
       {
         element: options.editorInkButton,
         eventName: "switchannotationeditormode",

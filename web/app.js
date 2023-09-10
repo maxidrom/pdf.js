@@ -1962,6 +1962,8 @@ const PDFViewerApplication = {
       webViewerSwitchAnnotationEditorMode
     );
     eventBus._on("playaudio", webViewerPlayAudio);
+    eventBus._on("audioBack", webViewerAudioBack);
+    eventBus._on("audioForward", webViewerAudioForward);
     eventBus._on(
       "switchannotationeditorparams",
       webViewerSwitchAnnotationEditorParams
@@ -2084,6 +2086,7 @@ const PDFViewerApplication = {
     }
     const { eventBus, _boundEvents } = this;
 
+    //TODO: unbind play, back and forward audio
     eventBus._off("resize", webViewerResize);
     eventBus._off("hashchange", webViewerHashchange);
     eventBus._off("beforeprint", _boundEvents.beforePrint);
@@ -2603,6 +2606,14 @@ function webViewerPlayAudio() {
         page.cleanup();
       });
   });
+}
+
+function webViewerAudioBack() {
+  alert("Back");
+}
+
+function webViewerAudioForward() {
+  alert("Forward");
 }
 
 function webViewerFindFromUrlHash(evt) {
