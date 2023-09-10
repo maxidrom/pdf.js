@@ -52,6 +52,7 @@ function getViewerConfiguration() {
       zoomIn: document.getElementById("zoomIn"),
       zoomOut: document.getElementById("zoomOut"),
       viewFind: document.getElementById("viewFind"),
+      play: document.getElementById("play"),
       openFile:
         typeof PDFJSDev === "undefined" || PDFJSDev.test("GENERIC")
           ? document.getElementById("openFile")

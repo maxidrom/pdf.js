@@ -94,6 +94,7 @@
   /*#if GENERIC*/
   --toolbarButton-openFile-icon: url(images/toolbarButton-openFile.svg);
   /*#endif*/
+  --toolbarButton-play: url(images/audio-play.svg);
   --toolbarButton-download-icon: url(images/toolbarButton-download.svg);
   --toolbarButton-bookmark-icon: url(images/toolbarButton-bookmark.svg);
   --toolbarButton-viewThumbnail-icon: url(images/toolbarButton-viewThumbnail.svg);
@@ -902,6 +903,10 @@ body {
 
 #zoomIn::before {
   mask-image: var(--toolbarButton-zoomIn-icon);
+}
+
+#play::before {
+  mask-image: var(--toolbarButton-play);
 }
 
 #presentationMode::before {
