@@ -79,6 +79,7 @@ function getViewerConfiguration() {
           : null,
       printButton: document.getElementById("secondaryPrint"),
       downloadButton: document.getElementById("secondaryDownload"),
+      secondaryEditorInkButton: document.getElementById("secondaryEditorInk"),
       viewBookmarkButton: document.getElementById("viewBookmark"),
       firstPageButton: document.getElementById("firstPage"),
       lastPageButton: document.getElementById("lastPage"),

@@ -222,6 +222,12 @@ See https://github.com/adobe-type-tools/cmap-resources
               <span data-l10n-id="save_label">Save</span>
             </button>
 
+            <!--Draw place in hidden toolbar-->
+            <button id="secondaryEditorInk" class="secondaryToolbarButton visibleMediumView" title="Draw" role="radio" aria-checked="false" aria-controls="editorInkParamsToolbar" tabindex="70" data-l10n-id="editor_ink2">
+              <span data-l10n-id="editor_ink2_label">Draw</span>
+            </button>
+
+
 <!--#if GENERIC-->
             <div class="horizontalToolbarSeparator visibleLargeView"></div>
 <!--#else-->
@@ -338,8 +344,14 @@ See https://github.com/adobe-type-tools/cmap-resources
                   <span data-l10n-id="print_label">Print</span>
                 </button>
 
+                <!--Save-->
                 <button id="download" class="toolbarButton hiddenMediumView" title="Save" tabindex="33" data-l10n-id="save">
                   <span data-l10n-id="save_label">Save</span>
+                </button>
+                
+                <!--Draw new place-->
+                <button id="editorInk" class="toolbarButton hiddenMediumView" title="Draw" role="radio" aria-checked="false" aria-controls="editorInkParamsToolbar" tabindex="35" data-l10n-id="editor_ink2">
+                  <span data-l10n-id="editor_ink2_label">Draw</span>
                 </button>
 
                 <div class="verticalToolbarSeparator hiddenMediumView"></div>
@@ -348,9 +360,9 @@ See https://github.com/adobe-type-tools/cmap-resources
                   <button id="editorFreeText" class="toolbarButton" disabled="disabled" title="Text" role="radio" aria-checked="false" aria-controls="editorFreeTextParamsToolbar" tabindex="34" data-l10n-id="editor_free_text2">
                     <span data-l10n-id="editor_free_text2_label">Text</span>
                   </button>
-                  <button id="editorInk" class="toolbarButton" disabled="disabled" title="Draw" role="radio" aria-checked="false" aria-controls="editorInkParamsToolbar" tabindex="35" data-l10n-id="editor_ink2">
-                    <span data-l10n-id="editor_ink2_label">Draw</span>
-                  </button>
+
+                  <!--Draw old place-->
+
                   <button id="editorStamp" class="toolbarButton hidden" disabled="disabled" title="Add or edit images" role="radio" aria-checked="false" aria-controls="editorStampParamsToolbar" tabindex="36" data-l10n-id="editor_stamp1">
                     <span data-l10n-id="editor_stamp1_label">Add or edit images</span>
                   </button>
