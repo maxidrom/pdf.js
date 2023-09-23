@@ -28,6 +28,7 @@ import {
   parseQueryString,
   ProgressBar,
   RenderingStates,
+  scrollIntoView,
   ScrollMode,
   SidebarView,
   SpreadMode,
@@ -2588,24 +2589,49 @@ function webViewerDocumentProperties() {
 }
 
 function webViewerPlayAudio() {
-  var myPdfViewer = PDFViewerApplication.pdfViewer;
-  var doc = myPdfViewer.pdfDocument;
-  return doc.getPage(PDFViewerApplication.page).then(function (page) {
-    return page
-      .getTextContent()
-      .then(function (content) {
-        // Content contains lots of information about the text layout and
-        // styles, but we need only strings at the moment
-        const strings = content.items.map(function (item) {
-          return item.str;
+  const synth = window.speechSynthesis;
+  if(!synth.speaking) {
+    //alert("speak!");
+    var myPdfViewer = PDFViewerApplication.pdfViewer;
+
+    //var myFirstVisibleText = myPdfViewer.getFirstVisibleText();
+
+    var doc = myPdfViewer.pdfDocument;
+    return doc.getPage(PDFViewerApplication.page).then(function (page) {
+      return page
+        .getTextContent()
+        .then(function (content) {
+          // Content contains lots of information about the text layout and
+          // styles, but we need only strings at the moment
+          const strings = content.items.map(function (item) {
+            return item.str;
+          });
+          console.log("## Text Content");
+          var txt = strings.join(" ");
+          console.log(txt);
+          const utterThis = new SpeechSynthesisUtterance(txt);
+          myPdfViewer = PDFViewerApplication.pdfViewer;
+          var myPageViewerbuffer = myPdfViewer.getCachedPageViews();
+          const [myPage] = myPageViewerbuffer;
+          const mySpan = myPage.textLayer.textDivs[123];
+          //scrollToView
+          const spot = {
+            top: -50,
+            left: -400,
+          };
+          scrollIntoView(mySpan, spot, /* scrollMatches = */ true);
+          synth.speak(utterThis);
+          // Release page resources.
+          page.cleanup();
         });
-        console.log("## Text Content");
-        console.log(strings.join(" "));
-        play(strings.join(" "));
-        // Release page resources.
-        page.cleanup();
-      });
-  });
+    });
+  } else if (synth.paused) {
+    alert("resume!");
+    synth.resume();
+  } else {
+    synth.pause();
+    alert("pause");
+  }
 }
 
 function webViewerAudioBack() {

@@ -1663,6 +1663,20 @@ class PDFViewer {
     });
   }
 
+  getFirstVisibleText() {
+    const views = this._pages[this._currentPageNumber-1].textLayer.textDivs,
+      textLay = this._pages[this._currentPageNumber-1].textLayer,
+      horizontal = this._scrollMode === ScrollMode.HORIZONTAL,
+      rtl = horizontal && this._isContainerRtl;
+    return getVisibleElements({
+      scrollEl: textLay,
+      views,
+      sortByVisibility: true,
+      horizontal,
+      rtl,
+    });
+  }
+
   cleanup() {
     for (const pageView of this._pages) {
       if (pageView.renderingState !== RenderingStates.FINISHED) {
