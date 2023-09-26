@@ -17,10 +17,10 @@
 /** @typedef {import("./tools.js").AnnotationEditorUIManager} AnnotationEditorUIManager */
 /** @typedef {import("../display_utils.js").PageViewport} PageViewport */
 // eslint-disable-next-line max-len
-/** @typedef {import("../../web/text_accessibility.js").TextAccessibilityManager} TextAccessibilityManager */
-/** @typedef {import("../../web/interfaces").IL10n} IL10n */
+/** @typedef {import("../../../web/text_accessibility.js").TextAccessibilityManager} TextAccessibilityManager */
+/** @typedef {import("../../../web/interfaces").IL10n} IL10n */
 // eslint-disable-next-line max-len
-/** @typedef {import("../src/display/annotation_layer.js").AnnotationLayer} AnnotationLayer */
+/** @typedef {import("../annotation_layer.js").AnnotationLayer} AnnotationLayer */
 
 import { AnnotationEditorType, FeatureTest } from "../../shared/util.js";
 import { AnnotationEditor } from "./editor.js";
@@ -73,6 +73,13 @@ class AnnotationEditorLayer {
 
   static _initialized = false;
 
+  static #editorTypes = new Map(
+    [FreeTextEditor, InkEditor, StampEditor].map(type => [
+      type._editorType,
+      type,
+    ])
+  );
+
   /**
    * @param {AnnotationEditorLayerOptions} options
    */
@@ -85,7 +92,7 @@ class AnnotationEditorLayer {
     viewport,
     l10n,
   }) {
-    const editorTypes = [FreeTextEditor, InkEditor, StampEditor];
+    const editorTypes = [...AnnotationEditorLayer.#editorTypes.values()];
     if (!AnnotationEditorLayer._initialized) {
       AnnotationEditorLayer._initialized = true;
       for (const editorType of editorTypes) {
@@ -131,18 +138,13 @@ class AnnotationEditorLayer {
     }
 
     if (mode !== AnnotationEditorType.NONE) {
-      this.div.classList.toggle(
-        "freeTextEditing",
-        mode === AnnotationEditorType.FREETEXT
-      );
-      this.div.classList.toggle(
-        "inkEditing",
-        mode === AnnotationEditorType.INK
-      );
-      this.div.classList.toggle(
-        "stampEditing",
-        mode === AnnotationEditorType.STAMP
-      );
+      const { classList } = this.div;
+      for (const editorType of AnnotationEditorLayer.#editorTypes.values()) {
+        classList.toggle(
+          `${editorType._type}Editing`,
+          mode === editorType._editorType
+        );
+      }
       this.div.hidden = false;
     }
   }
@@ -262,6 +264,11 @@ class AnnotationEditorLayer {
     if (this.isEmpty) {
       this.div.hidden = true;
     }
+    const { classList } = this.div;
+    for (const editorType of AnnotationEditorLayer.#editorTypes.values()) {
+      classList.remove(`${editorType._type}Editing`);
+    }
+
     this.#isDisabling = false;
   }
 
@@ -377,7 +384,8 @@ class AnnotationEditorLayer {
       editor.isAttachedToDOM = true;
     }
 
-    this.moveEditorInDOM(editor);
+    // The editor will be correctly moved into the DOM (see fixAndSetPosition).
+    editor.fixAndSetPosition();
     editor.onceAdded();
     this.#uiManager.addToAnnotationStorage(editor);
   }
@@ -395,18 +403,22 @@ class AnnotationEditorLayer {
       // re-enable them when the editor has the focus.
       editor._focusEventsAllowed = false;
       setTimeout(() => {
-        editor.div.addEventListener(
-          "focusin",
-          () => {
-            editor._focusEventsAllowed = true;
-          },
-          { once: true }
-        );
-        activeElement.focus();
+        if (!editor.div.contains(document.activeElement)) {
+          editor.div.addEventListener(
+            "focusin",
+            () => {
+              editor._focusEventsAllowed = true;
+            },
+            { once: true }
+          );
+          activeElement.focus();
+        } else {
+          editor._focusEventsAllowed = true;
+        }
       }, 0);
     }
 
-    this.#accessibilityManager?.moveElementInDOM(
+    editor._structTreeParentId = this.#accessibilityManager?.moveElementInDOM(
       this.div,
       editor.div,
       editor.contentDiv,
@@ -453,15 +465,10 @@ class AnnotationEditorLayer {
    * @returns {AnnotationEditor}
    */
   #createNewEditor(params) {
-    switch (this.#uiManager.getMode()) {
-      case AnnotationEditorType.FREETEXT:
-        return new FreeTextEditor(params);
-      case AnnotationEditorType.INK:
-        return new InkEditor(params);
-      case AnnotationEditorType.STAMP:
-        return new StampEditor(params);
-    }
-    return null;
+    const editorType = AnnotationEditorLayer.#editorTypes.get(
+      this.#uiManager.getMode()
+    );
+    return editorType ? new editorType.prototype.constructor(params) : null;
   }
 
   /**
@@ -492,18 +499,14 @@ class AnnotationEditorLayer {
   /**
    * Create a new editor
    * @param {Object} data
-   * @returns {AnnotationEditor}
+   * @returns {AnnotationEditor | null}
    */
   deserialize(data) {
-    switch (data.annotationType ?? data.annotationEditorType) {
-      case AnnotationEditorType.FREETEXT:
-        return FreeTextEditor.deserialize(data, this, this.#uiManager);
-      case AnnotationEditorType.INK:
-        return InkEditor.deserialize(data, this, this.#uiManager);
-      case AnnotationEditorType.STAMP:
-        return StampEditor.deserialize(data, this, this.#uiManager);
-    }
-    return null;
+    return (
+      AnnotationEditorLayer.#editorTypes
+        .get(data.annotationType ?? data.annotationEditorType)
+        ?.deserialize(data, this, this.#uiManager) || null
+    );
   }
 
   /**
@@ -675,6 +678,8 @@ class AnnotationEditorLayer {
    */
   destroy() {
     if (this.#uiManager.getActive()?.parent === this) {
+      // We need to commit the current editor before destroying the layer.
+      this.#uiManager.commitOrRemove();
       this.#uiManager.setActiveEditor(null);
     }
 

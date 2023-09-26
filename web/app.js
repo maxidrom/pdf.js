@@ -56,6 +56,7 @@ import {
 import { AppOptions, OptionKind } from "./app_options.js";
 import { AutomationEventBus, EventBus } from "./event_utils.js";
 import { LinkTarget, PDFLinkService } from "./pdf_link_service.js";
+import { AltTextManager } from "web-alt_text_manager";
 import { AnnotationEditorParams } from "web-annotation_editor_params";
 import { OverlayManager } from "./overlay_manager.js";
 import { PasswordPrompt } from "./password_prompt.js";
@@ -507,6 +508,14 @@ const PDFViewerApplication = {
             foreground: AppOptions.get("pageColorsForeground"),
           }
         : null;
+    const altTextManager = appConfig.altTextDialog
+      ? new AltTextManager(
+          appConfig.altTextDialog,
+          container,
+          this.overlayManager,
+          eventBus
+        )
+      : null;
 
     const pdfViewer = new PDFViewer({
       container,
@@ -515,6 +524,7 @@ const PDFViewerApplication = {
       renderingQueue: pdfRenderingQueue,
       linkService: pdfLinkService,
       downloadManager,
+      altTextManager,
       findController,
       scriptingManager:
         AppOptions.get("enableScripting") && pdfScriptingManager,
@@ -608,8 +618,7 @@ const PDFViewerApplication = {
           appConfig.toolbar,
           eventBus,
           l10n,
-          await this._nimbusDataPromise,
-          externalServices
+          await this._nimbusDataPromise
         );
       } else {
         this.toolbar = new Toolbar(appConfig.toolbar, eventBus, l10n);
@@ -619,8 +628,7 @@ const PDFViewerApplication = {
     if (appConfig.secondaryToolbar) {
       this.secondaryToolbar = new SecondaryToolbar(
         appConfig.secondaryToolbar,
-        eventBus,
-        externalServices
+        eventBus
       );
     }
 
@@ -2004,10 +2012,13 @@ const PDFViewerApplication = {
       eventBus._on("openfile", webViewerOpenFile);
     }
     if (typeof PDFJSDev !== "undefined" && PDFJSDev.test("MOZCENTRAL")) {
+      // The `unbindEvents` method is unused in MOZCENTRAL builds,
+      // hence we don't need to unregister these event listeners.
       eventBus._on(
         "annotationeditorstateschanged",
         webViewerAnnotationEditorStatesChanged
       );
+      eventBus._on("reporttelemetry", webViewerReportTelemetry);
     }
   },
 
@@ -2785,7 +2796,11 @@ function webViewerWheel(evt) {
     // Only zoom the pages, not the entire viewer.
     evt.preventDefault();
     // NOTE: this check must be placed *after* preventDefault.
-    if (zoomDisabledTimeout || document.visibilityState === "hidden") {
+    if (
+      zoomDisabledTimeout ||
+      document.visibilityState === "hidden" ||
+      PDFViewerApplication.overlayManager.active
+    ) {
       return;
     }
 
@@ -2861,7 +2876,7 @@ function webViewerTouchStart(evt) {
   }
   evt.preventDefault();
 
-  if (evt.touches.length !== 2) {
+  if (evt.touches.length !== 2 || PDFViewerApplication.overlayManager.active) {
     PDFViewerApplication._touchInfo = null;
     return;
   }
@@ -3338,6 +3353,10 @@ function beforeUnload(evt) {
 
 function webViewerAnnotationEditorStatesChanged(data) {
   PDFViewerApplication.externalServices.updateEditorStates(data);
+}
+
+function webViewerReportTelemetry({ details }) {
+  PDFViewerApplication.externalServices.reportTelemetry(details);
 }
 
 /* Abstract factory for the print service. */
