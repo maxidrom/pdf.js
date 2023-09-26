@@ -5590,6 +5590,14 @@
        "lastPage": 1,
        "type": "text"
     },
+    {  "id": "mupdf-707147",
+       "file": "pdfs/mupdf-707147.pdf",
+       "md5": "3b6f4e142baed0585bb52c1eb79f918a",
+       "rounds": 1,
+       "link": true,
+       "lastPage": 1,
+       "type": "eq"
+    },
     {  "id": "issue5421",
        "file": "pdfs/issue5421.pdf",
        "md5": "273f6813758a2349090003c7c8a0d85e",
@@ -8119,5 +8127,20 @@
           "rotation": 0
        }
      }
+   },
+   {
+      "id": "issue16863",
+      "file": "pdfs/issue16863.pdf",
+      "md5": "af8abe281721f92a0d46646969f061de",
+      "link": true,
+      "type": "other"
+   },
+   {
+      "id": "bug1851498",
+      "file": "pdfs/bug1851498.pdf",
+      "md5": "787f092f449016a649c6c9343042429a",
+      "rounds": 1,
+      "type": "eq",
+      "annotations": true
    }
 ]

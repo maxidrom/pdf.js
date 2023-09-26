@@ -833,7 +833,7 @@ describe("Interaction", () => {
             const prev = await page.$eval(getSelector("171R"), el => el.value);
 
             await page.type(getSelector(id), val.toString(), {
-              delay: 100,
+              delay: 200,
             });
             await page.keyboard.press("Tab");
 
@@ -1035,7 +1035,7 @@ describe("Interaction", () => {
         await clearInput(page, getSelector("30R"));
 
         await page.focus(getSelector("29R"));
-        await page.type(getSelector("29R"), "12A", { delay: 100 });
+        await page.type(getSelector("29R"), "12A", { delay: 200 });
         await page.waitForFunction(
           `${getQuerySelector("29R")}.value !== "12A"`
         );
@@ -1044,7 +1044,7 @@ describe("Interaction", () => {
         expect(text).withContext(`In ${browserName}`).toEqual("12");
 
         await page.focus(getSelector("29R"));
-        await page.type(getSelector("29R"), "34", { delay: 100 });
+        await page.type(getSelector("29R"), "34", { delay: 200 });
         await page.click("[data-annotation-id='30R']");
 
         await page.waitForFunction(
@@ -1055,7 +1055,7 @@ describe("Interaction", () => {
         expect(text).withContext(`In ${browserName}`).toEqual("");
 
         await page.focus(getSelector("29R"));
-        await page.type(getSelector("29R"), "12345", { delay: 100 });
+        await page.type(getSelector("29R"), "12345", { delay: 200 });
         await page.click("[data-annotation-id='30R']");
 
         text = await page.$eval(getSelector(`29R`), el => el.value);
@@ -1092,7 +1092,7 @@ describe("Interaction", () => {
         await clearInput(page, getSelector("30R"));
 
         await page.focus(getSelector("30R"));
-        await page.type(getSelector("30R"), "(123) 456A", { delay: 100 });
+        await page.type(getSelector("30R"), "(123) 456A", { delay: 200 });
         await page.waitForFunction(
           `${getQuerySelector("30R")}.value !== "(123) 456A"`
         );
@@ -1101,7 +1101,7 @@ describe("Interaction", () => {
         expect(text).withContext(`In ${browserName}`).toEqual("(123) 456");
 
         await page.focus(getSelector("30R"));
-        await page.type(getSelector("30R"), "-789", { delay: 100 });
+        await page.type(getSelector("30R"), "-789", { delay: 200 });
         await page.click("[data-annotation-id='29R']");
 
         await page.waitForFunction(
@@ -1112,7 +1112,7 @@ describe("Interaction", () => {
         expect(text).withContext(`In ${browserName}`).toEqual("");
 
         await page.focus(getSelector("30R"));
-        await page.type(getSelector("30R"), "(123) 456-7890", { delay: 100 });
+        await page.type(getSelector("30R"), "(123) 456-7890", { delay: 200 });
         await page.click("[data-annotation-id='29R']");
 
         text = await page.$eval(getSelector("30R"), el => el.value);
@@ -1149,7 +1149,7 @@ describe("Interaction", () => {
         await clearInput(page, getSelector("30R"));
 
         await page.focus(getSelector("30R"));
-        await page.type(getSelector("30R"), "123A", { delay: 100 });
+        await page.type(getSelector("30R"), "123A", { delay: 200 });
         await page.waitForFunction(
           `${getQuerySelector("30R")}.value !== "123A"`
         );
@@ -1158,7 +1158,7 @@ describe("Interaction", () => {
         expect(text).withContext(`In ${browserName}`).toEqual("123");
 
         await page.focus(getSelector("30R"));
-        await page.type(getSelector("30R"), "-456", { delay: 100 });
+        await page.type(getSelector("30R"), "-456", { delay: 200 });
         await page.click("[data-annotation-id='29R']");
 
         await page.waitForFunction(
@@ -1169,7 +1169,7 @@ describe("Interaction", () => {
         expect(text).withContext(`In ${browserName}`).toEqual("");
 
         await page.focus(getSelector("30R"));
-        await page.type(getSelector("30R"), "123-4567", { delay: 100 });
+        await page.type(getSelector("30R"), "123-4567", { delay: 200 });
         await page.click("[data-annotation-id='29R']");
 
         text = await page.$eval(getSelector("30R"), el => el.value);
@@ -1201,7 +1201,7 @@ describe("Interaction", () => {
             "window.PDFViewerApplication.scriptingReady === true"
           );
 
-          await page.type(getSelector("27R"), "Hello", { delay: 100 });
+          await page.type(getSelector("27R"), "Hello", { delay: 200 });
           await page.waitForFunction(
             `${getQuerySelector("27R")}.value !== "Hello"`
           );
@@ -1209,7 +1209,7 @@ describe("Interaction", () => {
           let text = await page.$eval(getSelector("27R"), el => el.value);
           expect(text).withContext(`In ${browserName}`).toEqual("HELLO");
 
-          await page.type(getSelector("27R"), " world", { delay: 100 });
+          await page.type(getSelector("27R"), " world", { delay: 200 });
           await page.waitForFunction(
             `${getQuerySelector("27R")}.value !== "HELLO world"`
           );
@@ -1227,7 +1227,7 @@ describe("Interaction", () => {
           text = await page.$eval(getSelector("27R"), el => el.value);
           expect(text).withContext(`In ${browserName}`).toEqual("HELLO WOR");
 
-          await page.type(getSelector("27R"), "12.dL", { delay: 100 });
+          await page.type(getSelector("27R"), "12.dL", { delay: 200 });
 
           await page.waitForFunction(
             `${getQuerySelector("27R")}.value !== "HELLO WOR"`
@@ -1236,7 +1236,7 @@ describe("Interaction", () => {
           text = await page.$eval(getSelector("27R"), el => el.value);
           expect(text).withContext(`In ${browserName}`).toEqual("HELLO WORDL");
 
-          await page.type(getSelector("27R"), " ", { delay: 100 });
+          await page.type(getSelector("27R"), " ", { delay: 200 });
 
           await page.keyboard.down("Control");
           await page.keyboard.press("Backspace");
@@ -1274,7 +1274,7 @@ describe("Interaction", () => {
             el.setSelectionRange(0, 0)
           );
 
-          await page.type(getSelector("28R"), "Hello", { delay: 100 });
+          await page.type(getSelector("28R"), "Hello", { delay: 200 });
           await page.waitForFunction(
             `${getQuerySelector("28R")}.value !== "123"`
           );
@@ -1322,7 +1322,7 @@ describe("Interaction", () => {
             "window.PDFViewerApplication.scriptingReady === true"
           );
 
-          await page.type(getSelector("29R"), "Hello World", { delay: 100 });
+          await page.type(getSelector("29R"), "Hello World", { delay: 200 });
           await page.click(getSelector("27R"));
 
           await page.waitForFunction(
@@ -1414,6 +1414,9 @@ describe("Interaction", () => {
             .toEqual("visible");
 
           await page.click(getSelector("44R"));
+          await page.waitForFunction(
+            `document.querySelector("[data-annotation-id='35R']").style.visibility === "hidden"`
+          );
 
           visibility = await page.$eval(
             "[data-annotation-id='35R']",
@@ -1760,7 +1763,7 @@ describe("Interaction", () => {
             "window.PDFViewerApplication.scriptingReady === true"
           );
 
-          await page.type(getSelector("30R"), "abc", { delay: 100 });
+          await page.type(getSelector("30R"), "abc", { delay: 200 });
           await page.waitForFunction(
             `${getQuerySelector("30R")}.value !== "abc"`
           );
@@ -1790,13 +1793,7 @@ describe("Interaction", () => {
     it("must check if printing is triggered when the document is open", async () => {
       await Promise.all(
         pages.map(async ([browserName, page]) => {
-          await page.waitForFunction(
-            "window.PDFViewerApplication.scriptingReady === true"
-          );
-
-          await page.waitForFunction(
-            `document.querySelector(".printedPage") !== null`
-          );
+          await page.waitForSelector(".printedPage");
           await page.keyboard.press("Escape");
         })
       );
@@ -1996,45 +1993,37 @@ describe("Interaction", () => {
     it("must check that a field has the correct formatted value", async () => {
       await Promise.all(
         pages.map(async ([browserName, page]) => {
-          const hasVisibleCanvas = await page.evaluate(_ => {
-            const elem = document.querySelector(
-              `[data-annotation-id="9R"] > canvas`
-            );
-            return elem && !elem.hasAttribute("hidden");
-          });
+          const hasVisibleCanvas = await page.$eval(
+            `[data-annotation-id="9R"] > canvas`,
+            elem => elem && !elem.hasAttribute("hidden")
+          );
           expect(hasVisibleCanvas)
             .withContext(`In ${browserName}`)
             .toEqual(true);
 
-          const hasHiddenInput = await page.evaluate(_ => {
-            const elem = document.querySelector(
-              `[data-annotation-id="9R"] > input`
-            );
-            return elem?.hasAttribute("hidden");
-          });
-
+          const hasHiddenInput = await page.$eval(
+            `[data-annotation-id="9R"] > input`,
+            elem => elem?.hasAttribute("hidden")
+          );
           expect(hasHiddenInput).withContext(`In ${browserName}`).toEqual(true);
 
           await page.click(getSelector("12R"));
-          await page.waitForTimeout(10);
+          await page.waitForSelector(
+            `[data-annotation-id="9R"] > canvas[hidden]`
+          );
 
-          const hasHiddenCanvas = await page.evaluate(_ => {
-            const elem = document.querySelector(
-              `[data-annotation-id="9R"] > canvas`
-            );
-            return elem?.hasAttribute("hidden");
-          });
+          const hasHiddenCanvas = await page.$eval(
+            `[data-annotation-id="9R"] > canvas`,
+            elem => elem?.hasAttribute("hidden")
+          );
           expect(hasHiddenCanvas)
             .withContext(`In ${browserName}`)
             .toEqual(true);
 
-          const hasVisibleInput = await page.evaluate(_ => {
-            const elem = document.querySelector(
-              `[data-annotation-id="9R"] > input`
-            );
-            return elem && !elem.hasAttribute("hidden");
-          });
-
+          const hasVisibleInput = await page.$eval(
+            `[data-annotation-id="9R"] > input`,
+            elem => elem && !elem.hasAttribute("hidden")
+          );
           expect(hasVisibleInput)
             .withContext(`In ${browserName}`)
             .toEqual(true);
@@ -2094,6 +2083,108 @@ describe("Interaction", () => {
           expect(visibility)
             .withContext(`In ${browserName}`)
             .toEqual("visible");
+        })
+      );
+    });
+  });
+
+  describe("in issue16863.pdf", () => {
+    let pages;
+
+    beforeAll(async () => {
+      pages = await loadAndWait("issue16863.pdf", getSelector("334R"));
+    });
+
+    afterAll(async () => {
+      await closePages(pages);
+    });
+
+    it("must check that checkboxes are correctly resetted", async () => {
+      await Promise.all(
+        pages.map(async ([browserName, page]) => {
+          await page.waitForFunction(
+            "window.PDFViewerApplication.scriptingReady === true"
+          );
+
+          let readonly = await page.$eval(
+            getSelector("353R"),
+            el => el.disabled
+          );
+          expect(readonly).withContext(`In ${browserName}`).toEqual(true);
+          await page.click(getSelector("334R"));
+          await page.waitForTimeout(10);
+
+          readonly = await page.$eval(getSelector("353R"), el => el.disabled);
+          expect(readonly).withContext(`In ${browserName}`).toEqual(true);
+          await page.click(getSelector("351R"));
+          await page.waitForTimeout(10);
+
+          readonly = await page.$eval(getSelector("353R"), el => el.disabled);
+          expect(readonly).withContext(`In ${browserName}`).toEqual(true);
+          await page.click(getSelector("352R"));
+          await page.waitForTimeout(10);
+
+          readonly = await page.$eval(getSelector("353R"), el => el.disabled);
+          expect(readonly).withContext(`In ${browserName}`).toEqual(false);
+
+          await page.click(getSelector("353R"));
+          await page.waitForTimeout(10);
+
+          let checked = await page.$eval(getSelector("353R"), el => el.checked);
+          expect(checked).withContext(`In ${browserName}`).toEqual(true);
+          await page.click(getSelector("334R"));
+          await page.waitForTimeout(10);
+
+          readonly = await page.$eval(getSelector("353R"), el => el.disabled);
+          expect(readonly).withContext(`In ${browserName}`).toEqual(true);
+          checked = await page.$eval(getSelector("353R"), el => el.checked);
+          expect(checked).withContext(`In ${browserName}`).toEqual(false);
+        })
+      );
+    });
+  });
+
+  describe("Textfields and focus", () => {
+    let pages;
+    let otherPages;
+
+    beforeAll(async () => {
+      otherPages = await Promise.all(
+        global.integrationSessions.map(async session =>
+          session.browser.newPage()
+        )
+      );
+      pages = await loadAndWait("evaljs.pdf", getSelector("55R"));
+    });
+
+    afterAll(async () => {
+      await closePages(pages);
+      await Promise.all(otherPages.map(page => page.close()));
+    });
+
+    it("must check that focus/blur callbacks aren't called", async () => {
+      await Promise.all(
+        pages.map(async ([browserName, page], i) => {
+          await page.waitForFunction(
+            "window.PDFViewerApplication.scriptingReady === true"
+          );
+
+          await page.click(getSelector("55R"));
+          await page.type(getSelector("55R"), "Hello", { delay: 10 });
+          await page.click(getSelector("56R"));
+          await page.waitForTimeout(10);
+
+          await page.click(getSelector("55R"));
+          await page.type(getSelector("55R"), " World", { delay: 10 });
+          await page.waitForTimeout(10);
+
+          await otherPages[i].bringToFront();
+          await otherPages[i].waitForTimeout(100);
+          await page.bringToFront();
+          await page.waitForTimeout(100);
+
+          const text = await page.$eval(getSelector("55R"), el => el.value);
+          expect(text).withContext(`In ${browserName}`).toEqual("Hello World");
         })
       );
     });
