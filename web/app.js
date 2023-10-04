@@ -2629,29 +2629,66 @@ function webViewerDocumentProperties() {
   PDFViewerApplication.pdfDocumentProperties?.open();
 }
 
-function webViewerPlayAudio() {
-  const synth = window.speechSynthesis;
-  if(!synth.speaking) {
-    //alert("speak!");
-    var myPdfViewer = PDFViewerApplication.pdfViewer;
+// get first visible span with text. If there is no visible text on this page find next text.
+// NOT USED
+function getSpanToPlay() {
+  const myPdfViewer = PDFViewerApplication.pdfViewer;
+  var myFirstVisibleTextIndex = myPdfViewer.getFirstVisibleTextSpanIndex();
+  var spanText = myPdfViewer._getVisiblePages().first.view.textLayer.textDivs[myFirstVisibleTextIndex]; //assuming that firat visibale page have visible text
+  return spanText;
+}
 
-    //var myFirstVisibleText = myPdfViewer.getFirstVisibleText();
+function speak(txt) {
+  var utterThis = new SpeechSynthesisUtterance(txt);
+  utterThis.lang = "en-US";
+  utterThis.addEventListener('boundary', (event) => {
+    console.log(
+      `${event.name} boundary reached on ${event.charIndex} char.`,
+    );
+    if (txt.charAt(event.charIndex-1) == ".")
+    //if 
+        console.log(`Dot reached on ${event.charIndex-1} char!!!!!!`);
+  });
+  utterThis.onend = () => {
+    console.log("End bliach!!!");
+  }
+  window.speechSynthesis.speak(utterThis);
+}
 
-    var doc = myPdfViewer.pdfDocument;
-    return doc.getPage(PDFViewerApplication.page).then(function (page) {
-      return page
+function getTextToSpeak() {
+  var myPdfViewer = PDFViewerApplication.pdfViewer;
+  var firstVisibleTextIndex = myPdfViewer.getFirstVisibleTextSpanIndex();
+  var doc = myPdfViewer.pdfDocument;
+  const firstVisiblePageId = myPdfViewer._getVisiblePages().first.id;
+  return new Promise(function(resolve, reject) {
+    doc.getPage(firstVisiblePageId)
+    .then(function (page) {
+      //return page
+      page
         .getTextContent()
         .then(function (content) {
           // Content contains lots of information about the text layout and
           // styles, but we need only strings at the moment
-          const strings = content.items.map(function (item) {
+          const strings = content.items.slice(firstVisibleTextIndex).map(function (item, index) {
+            //spanIndex = firstVisibleTextIndex + index - index of span from page beggining
+            //accumCharIndex = accumulate charIndex startting from Utter beggining
+            //if dot
+              //dotIndexInSpan = find dot in item
+              //indexOfDotChar = accumCharIndex + dotIndexInSpan
+              //dotSpanMapper[indexOfDotChar] = spanIndex
             return item.str;
           });
           console.log("## Text Content");
           var txt = strings.join(" ");
           console.log(txt);
-          const utterThis = new SpeechSynthesisUtterance(txt);
-          myPdfViewer = PDFViewerApplication.pdfViewer;
+          //return new Promise(function(resolve, reject) {
+          resolve(txt)
+          //});
+          // Release page resources.
+          page.cleanup();
+
+          //-------experimental scroll
+          /*myPdfViewer = PDFViewerApplication.pdfViewer;
           var myPageViewerbuffer = myPdfViewer.getCachedPageViews();
           const [myPage] = myPageViewerbuffer;
           const mySpan = myPage.textLayer.textDivs[123];
@@ -2660,18 +2697,28 @@ function webViewerPlayAudio() {
             top: -50,
             left: -400,
           };
-          scrollIntoView(mySpan, spot, /* scrollMatches = */ true);
-          synth.speak(utterThis);
-          // Release page resources.
-          page.cleanup();
+          scrollIntoView(mySpan, spot, true);*/
         });
-    });
+    }, reject);
+  });
+}
+
+function webViewerPlayAudio() {
+  const synth = window.speechSynthesis;
+  if(!synth.speaking) {
+    //const spanToPlay = myPdfViewer._getVisiblePages().first.view.textLayer.textDivs[firstVisibleTextIndex];
+    //scrollIntoView(spanToPlay, false, true);
+    getTextToSpeak()
+    .then((txt) =>  speak(txt));
+
   } else if (synth.paused) {
     alert("resume!");
-    synth.resume();
+    //synth.resume();
+    synth.cancel();
   } else {
-    synth.pause();
-    alert("pause");
+    //synth.pause();
+    //alert("pause");
+    synth.cancel();
   }
 }
 

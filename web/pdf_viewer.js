@@ -38,6 +38,7 @@ import {
   version,
 } from "pdfjs-lib";
 import {
+  binarySearchFirstItem,
   DEFAULT_SCALE,
   DEFAULT_SCALE_DELTA,
   DEFAULT_SCALE_VALUE,
@@ -1671,18 +1672,35 @@ class PDFViewer {
     });
   }
 
-  getFirstVisibleText() {
-    const views = this._pages[this._currentPageNumber-1].textLayer.textDivs,
-      textLay = this._pages[this._currentPageNumber-1].textLayer,
-      horizontal = this._scrollMode === ScrollMode.HORIZONTAL,
-      rtl = horizontal && this._isContainerRtl;
-    return getVisibleElements({
-      scrollEl: textLay,
-      views,
-      sortByVisibility: true,
-      horizontal,
-      rtl,
-    });
+  getFirstVisibleTextSpanIndex() {
+
+    function isElementVisible(el) {
+      const holder = PDFViewerApplication.pdfViewer.container
+      const { top, bottom, height } = el.getBoundingClientRect()
+      const holderRect = holder.getBoundingClientRect()
+      /*return top <= holderRect.top
+        ? holderRect.top - top <= height
+        : bottom - holderRect.bottom <= height*/
+      return top >= holderRect.top && bottom <= holderRect.bottom
+    }
+
+    const items = this._getVisiblePages().first.view.textLayer.textDivs;
+
+    //
+    /*
+    his._getVisiblePages(). //get index of first visible page
+    var textFound = false;
+    while (!textFound) {
+      const items = this._getVisiblePages().first.view.textLayer.textDivs; //get spans from the page
+      var firstVisibleTextIndex = binarySearchFirstItem(items, isElementVisible);
+      if (firstVisibleTextIndex < items.length)
+        textFound = true;
+      else
+        //get next page
+    }
+    */
+
+    return binarySearchFirstItem(items, isElementVisible);
   }
 
   cleanup() {
