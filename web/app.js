@@ -2663,60 +2663,32 @@ function getTextToSpeak() {
   return new Promise(function(resolve, reject) {
     doc.getPage(firstVisiblePageId)
     .then(function (page) {
-      //return page
-      page
-        .getTextContent()
-        .then(function (content) {
-          // Content contains lots of information about the text layout and
-          // styles, but we need only strings at the moment
-          const strings = content.items.slice(firstVisibleTextIndex).map(function (item, index) {
-            //spanIndex = firstVisibleTextIndex + index - index of span from page beggining
-            //accumCharIndex = accumulate charIndex startting from Utter beggining
-            //if dot
-              //dotIndexInSpan = find dot in item
-              //indexOfDotChar = accumCharIndex + dotIndexInSpan
-              //dotSpanMapper[indexOfDotChar] = spanIndex
-            return item.str;
-          });
-          console.log("## Text Content");
-          var txt = strings.join(" ");
-          console.log(txt);
-          //return new Promise(function(resolve, reject) {
-          resolve(txt)
-          //});
-          // Release page resources.
-          page.cleanup();
-
-          //-------experimental scroll
-          /*myPdfViewer = PDFViewerApplication.pdfViewer;
-          var myPageViewerbuffer = myPdfViewer.getCachedPageViews();
-          const [myPage] = myPageViewerbuffer;
-          const mySpan = myPage.textLayer.textDivs[123];
-          //scrollToView
-          const spot = {
-            top: -50,
-            left: -400,
-          };
-          scrollIntoView(mySpan, spot, true);*/
+      page.getTextContent()
+      .then(function (content) {
+        // Content contains lots of information about the text layout and
+        // styles, but we need only strings at the moment
+        const strings = content.items.slice(firstVisibleTextIndex).map(function (item, index) {
+          return item.str;
         });
+        console.log("## Text Content");
+        var txt = strings.join(" ");
+        console.log(txt);
+        resolve(txt)
+        // Release page resources.
+        page.cleanup();
+      });
     }, reject);
   });
 }
 
 function webViewerPlayAudio() {
   const synth = window.speechSynthesis;
-  if(!synth.speaking) {
+  if( !synth.speaking ) {
     //const spanToPlay = myPdfViewer._getVisiblePages().first.view.textLayer.textDivs[firstVisibleTextIndex];
     //scrollIntoView(spanToPlay, false, true);
     getTextToSpeak()
     .then((txt) =>  speak(txt));
-
-  } else if (synth.paused) {
-    alert("resume!");
-    //synth.resume();
-    synth.cancel();
   } else {
-    //synth.pause();
     //alert("pause");
     synth.cancel();
   }
