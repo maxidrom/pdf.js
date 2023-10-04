@@ -2655,9 +2655,50 @@ function speak(txt) {
   window.speechSynthesis.speak(utterThis);
 }
 
+function findIndexOfAny(str, charList) {
+  for (let i = 0; i < str.length; i++) {
+    if (charList.includes(str[i])) {
+      return i;
+    }
+  }
+  return -1; // Return -1 if none of the characters are found
+}
+
+function findIndexOfSentenceEnd(str){
+  return findIndexOfAny(str, ['.', '!', '?']);
+}
+
+function findFirstSentence(content) {
+  var sentence = '';
+  var i = PDFViewerApplication.pdfViewer.getFirstVisibleTextSpanIndex();
+  do {
+    var str = content.items[i].str;
+    var indexOfSentenceEnd = findIndexOfSentenceEnd(str);
+    i++;
+  } while( indexOfSentenceEnd==-1 && i<content.items.length )
+
+  if ( i<content.items.length ) { //. founded
+    sentence += str.substring(indexOfSentenceEnd+1);
+  } else {
+    return -1;
+  }
+
+  do {
+    var str = content.items[i].str;
+    var indexOfSentenceEnd = findIndexOfSentenceEnd(str);
+    if( indexOfSentenceEnd == -1 ) { // no . in this span
+      sentence += " " + str;           // push the whole span
+    } else {                       // get part of span untill (including) .
+      sentence += " " + str.substring(0, indexOfSentenceEnd+1);
+    }
+    i++;
+  } while( i<content.items.length && indexOfSentenceEnd==-1 )
+  return sentence;
+}
+
 function getTextToSpeak() {
   var myPdfViewer = PDFViewerApplication.pdfViewer;
-  var firstVisibleTextIndex = myPdfViewer.getFirstVisibleTextSpanIndex();
+  //var firstVisibleTextIndex = myPdfViewer.getFirstVisibleTextSpanIndex();
   var doc = myPdfViewer.pdfDocument;
   const firstVisiblePageId = myPdfViewer._getVisiblePages().first.id;
   return new Promise(function(resolve, reject) {
@@ -2665,17 +2706,11 @@ function getTextToSpeak() {
     .then(function (page) {
       page.getTextContent()
       .then(function (content) {
-        // Content contains lots of information about the text layout and
-        // styles, but we need only strings at the moment
-        const strings = content.items.slice(firstVisibleTextIndex).map(function (item, index) {
-          return item.str;
-        });
-        console.log("## Text Content");
-        var txt = strings.join(" ");
-        console.log(txt);
-        resolve(txt)
-        // Release page resources.
+        const sentence = findFirstSentence(content);
         page.cleanup();
+        console.log("## Text Content");
+        console.log(sentence);
+        resolve(sentence);
       });
     }, reject);
   });
