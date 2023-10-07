@@ -2677,16 +2677,19 @@ function isSpanAlignedWithSentence(content, spanId){
   var str = content.items[spanId].str;
   var strInd = 0;
   //findFirstLetter
-  while ( strInd<str.length &&  !isLetter(str[strInd])) strInd++;
+  while ( strInd<str.length && !isLetter(str[strInd]) ) strInd++;
   if (strInd<str.length) return str[strInd] == str[strInd].toUpperCase();
   else return false;
 }
 
 function findFirstSentence(content) {
+  //var top1 = 0;
   var sentence = '';
   var i = PDFViewerApplication.pdfViewer.getFirstVisibleTextSpanIndex();
   if ( i == -1 ) return -1;
+  //if span is not started with sentence find 
   if ( !isSpanAlignedWithSentence(content, i) ) {
+    // find first .
     do {
       var str = content.items[i].str;
       var indexOfSentenceEnd = findIndexOfSentenceEnd(str);
@@ -2695,11 +2698,18 @@ function findFirstSentence(content) {
 
     if ( i<content.items.length ) { //. founded
       sentence += str.substring(indexOfSentenceEnd+1);
+      //top1 = PDFViewerApplication.pdfViewer._getVisiblePages().first.view.textLayer.textDivs[i]
+      //  .getBoundingClientRect().top;
     } else {
       return -1;
     }
+  } else {
+    var str = content.items[i].str;
+    sentence += str;
+    i++;
   }
 
+  //var top2 = 0;
   do {
     var str = content.items[i].str;
     var indexOfSentenceEnd = findIndexOfSentenceEnd(str);
@@ -2709,7 +2719,9 @@ function findFirstSentence(content) {
       sentence += " " + str.substring(0, indexOfSentenceEnd+1);
     }
     i++;
-  } while( i<content.items.length && indexOfSentenceEnd==-1 )
+    //top2 = PDFViewerApplication.pdfViewer._getVisiblePages().first.view.textLayer.textDivs[i]
+    //.getBoundingClientRect().top;
+  } while( i<content.items.length && ( indexOfSentenceEnd==-1 /*|| top2==top1*/ ) )
   const spanIdOfSentenceEnd = i - 1;
   return {sentence, spanIdOfSentenceEnd};
 }
