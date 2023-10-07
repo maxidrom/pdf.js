@@ -2682,7 +2682,10 @@ function isSpanAlignedWithSentence(content, spanId){
   else return false;
 }
 
-function findFirstSentence(content) {
+// Find toppest visible sentence on the page.
+// Returns sentence as a string and 
+// sentenceEndSpanIndex - Index of span where sentence ends.
+function findFirstVisibleSentence(content) {
   //var top1 = 0;
   var sentence = '';
   var i = PDFViewerApplication.pdfViewer.getFirstVisibleTextSpanIndex();
@@ -2722,8 +2725,8 @@ function findFirstSentence(content) {
     //top2 = PDFViewerApplication.pdfViewer._getVisiblePages().first.view.textLayer.textDivs[i]
     //.getBoundingClientRect().top;
   } while( i<content.items.length && ( indexOfSentenceEnd==-1 /*|| top2==top1*/ ) )
-  const spanIdOfSentenceEnd = i - 1;
-  return {sentence, spanIdOfSentenceEnd};
+  const sentenceEndSpanIndex = i - 1;
+  return {sentence, sentenceEndSpanIndex};
 }
 
 function getTextToSpeak() {
@@ -2736,7 +2739,7 @@ function getTextToSpeak() {
     .then(function (page) {
       page.getTextContent()
       .then(function (content) {
-        const {sentence, spanIdOfSentenceEnd} = findFirstSentence(content);
+        const {sentence, spanIdOfSentenceEnd} = findFirstVisibleSentence(content);
         page.cleanup();
         console.log("## Text Content");
         console.log(sentence);
