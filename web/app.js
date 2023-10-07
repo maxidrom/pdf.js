@@ -2669,19 +2669,33 @@ function findIndexOfSentenceEnd(str){
   return findIndexOfAny(str, ['.', '!', '?']);
 }
 
+function isLetter(c) {
+  return c.toLowerCase() != c.toUpperCase();
+}
+
+function isSpanAlignedWithSentence(content, spanId){
+  var str = content.items[spanId].str;
+  var strInd = 0;
+  while ( strInd<str.length &&  !isLetter(str[strInd])) strInd++;   //findFirstLetter
+  if (strInd<str.length) return str[strInd] == str[strInd].toUpperCase();
+  else return false;
+}
+
 function findFirstSentence(content) {
   var sentence = '';
   var i = PDFViewerApplication.pdfViewer.getFirstVisibleTextSpanIndex();
-  do {
-    var str = content.items[i].str;
-    var indexOfSentenceEnd = findIndexOfSentenceEnd(str);
-    i++;
-  } while( indexOfSentenceEnd==-1 && i<content.items.length )
+  if ( !isSpanAlignedWithSentence(content, i) ) {
+    do {
+      var str = content.items[i].str;
+      var indexOfSentenceEnd = findIndexOfSentenceEnd(str);
+      i++;
+    } while( indexOfSentenceEnd==-1 && i<content.items.length )
 
-  if ( i<content.items.length ) { //. founded
-    sentence += str.substring(indexOfSentenceEnd+1);
-  } else {
-    return -1;
+    if ( i<content.items.length ) { //. founded
+      sentence += str.substring(indexOfSentenceEnd+1);
+    } else {
+      return -1;
+    }
   }
 
   do {
