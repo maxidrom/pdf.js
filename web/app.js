@@ -2638,19 +2638,20 @@ function getSpanToPlay() {
   return spanText;
 }
 
-function speak(txt) {
-  var utterThis = new SpeechSynthesisUtterance(txt);
+function speak({sentence, spanIdOfSentenceEnd}) {
+  var utterThis = new SpeechSynthesisUtterance(sentence);
   utterThis.lang = "en-US";
-  utterThis.addEventListener('boundary', (event) => {
-    console.log(
-      `${event.name} boundary reached on ${event.charIndex} char.`,
-    );
-    if (txt.charAt(event.charIndex-1) == ".")
-    //if 
-        console.log(`Dot reached on ${event.charIndex-1} char!!!!!!`);
-  });
   utterThis.onend = () => {
     console.log("End bliach!!!");
+    //scrolling
+    const spot = {
+      top: 5,
+      left: 0,
+    };
+    const mySpan = PDFViewerApplication.pdfViewer._getVisiblePages().first.view.textLayer.textDivs[spanIdOfSentenceEnd];
+    scrollIntoView(mySpan, spot, true);
+    //start speaking next sentence
+    webViewerPlayAudio();
   }
   window.speechSynthesis.speak(utterThis);
 }
@@ -2686,14 +2687,15 @@ function findFirstSentence(content) {
   do {
     var str = content.items[i].str;
     var indexOfSentenceEnd = findIndexOfSentenceEnd(str);
-    if( indexOfSentenceEnd == -1 ) { // no . in this span
-      sentence += " " + str;           // push the whole span
-    } else {                       // get part of span untill (including) .
+    if( indexOfSentenceEnd == -1 ) {    // no . in this span
+      sentence += " " + str;            // push the whole span
+    } else {                            // get part of span untill (including) .
       sentence += " " + str.substring(0, indexOfSentenceEnd+1);
     }
     i++;
   } while( i<content.items.length && indexOfSentenceEnd==-1 )
-  return sentence;
+  const spanIdOfSentenceEnd = i - 1;
+  return {sentence, spanIdOfSentenceEnd};
 }
 
 function getTextToSpeak() {
@@ -2706,11 +2708,11 @@ function getTextToSpeak() {
     .then(function (page) {
       page.getTextContent()
       .then(function (content) {
-        const sentence = findFirstSentence(content);
+        const {sentence, spanIdOfSentenceEnd} = findFirstSentence(content);
         page.cleanup();
         console.log("## Text Content");
         console.log(sentence);
-        resolve(sentence);
+        resolve({sentence, spanIdOfSentenceEnd});
       });
     }, reject);
   });
@@ -2722,7 +2724,7 @@ function webViewerPlayAudio() {
     //const spanToPlay = myPdfViewer._getVisiblePages().first.view.textLayer.textDivs[firstVisibleTextIndex];
     //scrollIntoView(spanToPlay, false, true);
     getTextToSpeak()
-    .then((txt) =>  speak(txt));
+    .then(({sentence, spanIdOfSentenceEnd}) =>  speak({sentence, spanIdOfSentenceEnd}));
   } else {
     //alert("pause");
     synth.cancel();
