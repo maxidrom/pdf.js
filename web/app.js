@@ -2676,7 +2676,8 @@ function isLetter(c) {
 function isSpanAlignedWithSentence(content, spanId){
   var str = content.items[spanId].str;
   var strInd = 0;
-  while ( strInd<str.length &&  !isLetter(str[strInd])) strInd++;   //findFirstLetter
+  //findFirstLetter
+  while ( strInd<str.length &&  !isLetter(str[strInd])) strInd++;
   if (strInd<str.length) return str[strInd] == str[strInd].toUpperCase();
   else return false;
 }
@@ -2684,6 +2685,7 @@ function isSpanAlignedWithSentence(content, spanId){
 function findFirstSentence(content) {
   var sentence = '';
   var i = PDFViewerApplication.pdfViewer.getFirstVisibleTextSpanIndex();
+  if ( i == -1 ) return -1;
   if ( !isSpanAlignedWithSentence(content, i) ) {
     do {
       var str = content.items[i].str;

@@ -1673,7 +1673,6 @@ class PDFViewer {
   }
 
   getFirstVisibleTextSpanIndex() {
-
     function isElementVisible(el) {
       const holder = PDFViewerApplication.pdfViewer.container
       const { top, bottom, height } = el.getBoundingClientRect()
@@ -1685,22 +1684,10 @@ class PDFViewer {
     }
 
     const items = this._getVisiblePages().first.view.textLayer.textDivs;
-
-    //
-    /*
-    his._getVisiblePages(). //get index of first visible page
-    var textFound = false;
-    while (!textFound) {
-      const items = this._getVisiblePages().first.view.textLayer.textDivs; //get spans from the page
-      var firstVisibleTextIndex = binarySearchFirstItem(items, isElementVisible);
-      if (firstVisibleTextIndex < items.length)
-        textFound = true;
-      else
-        //get next page
-    }
-    */
-
-    return binarySearchFirstItem(items, isElementVisible);
+    var index = 0;
+    while ( !isElementVisible(items[index]) && index<items.length ) index++;
+    if ( index<items.length ) return index;
+    else return -1;
   }
 
   cleanup() {
