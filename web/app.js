@@ -2683,18 +2683,18 @@ function isSpanAlignedWithSentence(content, spanId){
 
 // Find toppest visible sentence on the page.
 // Returns sentence as a string and 
-// sentenceEndSpanIndex - Index of span where sentence ends.
+// spanToScroll - span where sentence ends.
 function findFirstVisibleSentence() {
   const firstVisiblePageIndex = PDFViewerApplication.pdfViewer._getVisiblePages().first.id;
   var textDivsFirstVisible = PDFViewerApplication.pdfViewer._pages[firstVisiblePageIndex-1].textLayer.textDivs;
   var textDivsNext = PDFViewerApplication.pdfViewer._pages[firstVisiblePageIndex].textLayer.textDivs;
   const content = textDivsFirstVisible.concat(textDivsNext);
 
-  //var top1 = 0;
+  //Sentence START
   var sentence = '';
   var i = PDFViewerApplication.pdfViewer.getFirstVisibleTextSpanIndex();
   if ( i == -1 ) return -1;
-  //if span is not started with sentence find 
+  //if span is not started with sentence find sentence start
   if ( !isSpanAlignedWithSentence(content, i) ) {
     // find first .
     do {
@@ -2705,8 +2705,6 @@ function findFirstVisibleSentence() {
 
     if ( i<content.length ) { //. founded
       sentence += str.substring(indexOfSentenceEnd+1);
-      //top1 = PDFViewerApplication.pdfViewer._getVisiblePages().first.view.textLayer.textDivs[i]
-      //  .getBoundingClientRect().top;
     } else {
       return -1;
     }
@@ -2715,21 +2713,27 @@ function findFirstVisibleSentence() {
     sentence += str;
     i++;
   }
+  var startOffsetTop = content[i-1].offsetTop;
 
-  //var top2 = 0;
+  //Sentence FINISH
   do {
     var str = content[i].innerText;
-    var indexOfSentenceEnd = findIndexOfSentenceEnd(str);
-    if( indexOfSentenceEnd == -1 ) {    // no . in this span
-      sentence += " " + str;            // push the whole span
-    } else {                            // get part of span untill (including) .
-      sentence += " " + str.substring(0, indexOfSentenceEnd+1);
+    var sameLine = (content[i].offsetTop==startOffsetTop);
+    if( sameLine ) {
+      sentence += " " + str;
+      i++;
+    } else {
+      var indexOfSentenceEnd=findIndexOfSentenceEnd(str);
+      if ( indexOfSentenceEnd==-1 ) {
+        sentence += " " + str;
+        i++;
+      } else {
+        sentence += " " + str.substring(0, indexOfSentenceEnd+1);
+        break;
+      }
     }
-    i++;
-    //top2 = PDFViewerApplication.pdfViewer._getVisiblePages().first.view.textLayer.textDivs[i]
-    //.getBoundingClientRect().top;
-  } while( i<content.length && ( indexOfSentenceEnd==-1 /*|| top2==top1*/ ) )
-  i--;
+  } while( i<content.length )
+
   console.log("## Text Content");
   console.log(sentence);
 
