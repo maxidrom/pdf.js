@@ -2638,7 +2638,7 @@ function getSpanToPlay() {
   return spanText;
 }
 
-function speak({sentence, spanIdOfSentenceEnd}) {
+function speak({sentence, spanToScroll}) {
   var utterThis = new SpeechSynthesisUtterance(sentence);
   utterThis.lang = "en-US";
   utterThis.onend = () => {
@@ -2648,8 +2648,7 @@ function speak({sentence, spanIdOfSentenceEnd}) {
       top: 5,
       left: 0,
     };
-    const mySpan = PDFViewerApplication.pdfViewer._getVisiblePages().first.view.textLayer.textDivs[spanIdOfSentenceEnd];
-    scrollIntoView(mySpan, spot, true);
+    scrollIntoView(spanToScroll, spot, true);
     //start speaking next sentence
     webViewerPlayAudio();
   }
@@ -2674,7 +2673,7 @@ function isLetter(c) {
 }
 
 function isSpanAlignedWithSentence(content, spanId){
-  var str = content.items[spanId].str;
+  var str = content[spanId].innerText;
   var strInd = 0;
   //findFirstLetter
   while ( strInd<str.length && !isLetter(str[strInd]) ) strInd++;
@@ -2685,7 +2684,12 @@ function isSpanAlignedWithSentence(content, spanId){
 // Find toppest visible sentence on the page.
 // Returns sentence as a string and 
 // sentenceEndSpanIndex - Index of span where sentence ends.
-function findFirstVisibleSentence(content) {
+function findFirstVisibleSentence() {
+  const firstVisiblePageIndex = PDFViewerApplication.pdfViewer._getVisiblePages().first.id;
+  var textDivsFirstVisible = PDFViewerApplication.pdfViewer._pages[firstVisiblePageIndex-1].textLayer.textDivs;
+  var textDivsNext = PDFViewerApplication.pdfViewer._pages[firstVisiblePageIndex].textLayer.textDivs;
+  const content = textDivsFirstVisible.concat(textDivsNext);
+
   //var top1 = 0;
   var sentence = '';
   var i = PDFViewerApplication.pdfViewer.getFirstVisibleTextSpanIndex();
@@ -2694,12 +2698,12 @@ function findFirstVisibleSentence(content) {
   if ( !isSpanAlignedWithSentence(content, i) ) {
     // find first .
     do {
-      var str = content.items[i].str;
+      var str = content[i].innerText;
       var indexOfSentenceEnd = findIndexOfSentenceEnd(str);
       i++;
-    } while( indexOfSentenceEnd==-1 && i<content.items.length )
+    } while( indexOfSentenceEnd==-1 && i<content.length )
 
-    if ( i<content.items.length ) { //. founded
+    if ( i<content.length ) { //. founded
       sentence += str.substring(indexOfSentenceEnd+1);
       //top1 = PDFViewerApplication.pdfViewer._getVisiblePages().first.view.textLayer.textDivs[i]
       //  .getBoundingClientRect().top;
@@ -2707,14 +2711,14 @@ function findFirstVisibleSentence(content) {
       return -1;
     }
   } else {
-    var str = content.items[i].str;
+    var str = content[i].innerText;
     sentence += str;
     i++;
   }
 
   //var top2 = 0;
   do {
-    var str = content.items[i].str;
+    var str = content[i].innerText;
     var indexOfSentenceEnd = findIndexOfSentenceEnd(str);
     if( indexOfSentenceEnd == -1 ) {    // no . in this span
       sentence += " " + str;            // push the whole span
@@ -2724,29 +2728,17 @@ function findFirstVisibleSentence(content) {
     i++;
     //top2 = PDFViewerApplication.pdfViewer._getVisiblePages().first.view.textLayer.textDivs[i]
     //.getBoundingClientRect().top;
-  } while( i<content.items.length && ( indexOfSentenceEnd==-1 /*|| top2==top1*/ ) )
-  const sentenceEndSpanIndex = i - 1;
-  return {sentence, sentenceEndSpanIndex};
-}
+  } while( i<content.length && ( indexOfSentenceEnd==-1 /*|| top2==top1*/ ) )
+  i--;
+  console.log("## Text Content");
+  console.log(sentence);
 
-function getTextToSpeak() {
-  var myPdfViewer = PDFViewerApplication.pdfViewer;
-  //var firstVisibleTextIndex = myPdfViewer.getFirstVisibleTextSpanIndex();
-  var doc = myPdfViewer.pdfDocument;
-  const firstVisiblePageId = myPdfViewer._getVisiblePages().first.id;
-  return new Promise(function(resolve, reject) {
-    doc.getPage(firstVisiblePageId)
-    .then(function (page) {
-      page.getTextContent()
-      .then(function (content) {
-        const {sentence, spanIdOfSentenceEnd} = findFirstVisibleSentence(content);
-        page.cleanup();
-        console.log("## Text Content");
-        console.log(sentence);
-        resolve({sentence, spanIdOfSentenceEnd});
-      });
-    }, reject);
-  });
+  var spanToScroll;
+  if ( i < textDivsFirstVisible.length )
+    spanToScroll = textDivsFirstVisible[i];
+  else
+    spanToScroll = textDivsNext[ i - textDivsFirstVisible.length ];
+  return {sentence, spanToScroll};
 }
 
 function webViewerPlayAudio() {
@@ -2754,10 +2746,8 @@ function webViewerPlayAudio() {
   if( !synth.speaking ) {
     //const spanToPlay = myPdfViewer._getVisiblePages().first.view.textLayer.textDivs[firstVisibleTextIndex];
     //scrollIntoView(spanToPlay, false, true);
-    getTextToSpeak()
-    .then(({sentence, spanIdOfSentenceEnd}) =>  speak({sentence, spanIdOfSentenceEnd}));
+    speak(findFirstVisibleSentence());
   } else {
-    //alert("pause");
     synth.cancel();
   }
 }
