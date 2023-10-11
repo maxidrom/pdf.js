@@ -2681,67 +2681,74 @@ function isSpanAlignedWithSentence(content, spanId){
   else return false;
 }
 
-// Find toppest visible sentence on the page.
+// Find toppest visible sentence on the page. If it is only one line sentence then
+// read next sentences untill it ends on another line. 
 // Returns sentence as a string and 
 // spanToScroll - span where sentence ends.
 function findFirstVisibleSentence() {
   const firstVisiblePageIndex = PDFViewerApplication.pdfViewer._getVisiblePages().first.id;
   var textDivsFirstVisible = PDFViewerApplication.pdfViewer._pages[firstVisiblePageIndex-1].textLayer.textDivs;
   var textDivsNext = PDFViewerApplication.pdfViewer._pages[firstVisiblePageIndex].textLayer.textDivs;
-  const content = textDivsFirstVisible.concat(textDivsNext);
+  const topTwoPages = textDivsFirstVisible.concat(textDivsNext);
 
   //Sentence START
   var sentence = '';
-  var i = PDFViewerApplication.pdfViewer.getFirstVisibleTextSpanIndex();
-  if ( i == -1 ) return -1;
-  //if span is not started with sentence find sentence start
-  if ( !isSpanAlignedWithSentence(content, i) ) {
+  var spanIndexPointer = PDFViewerApplication.pdfViewer.getFirstVisibleTextSpanIndex();
+  if ( spanIndexPointer == -1 ) return -1;
+  // if span is not started with sentence find sentence start
+  if ( !isSpanAlignedWithSentence(topTwoPages, spanIndexPointer) ) {
     // find first .
     do {
-      var str = content[i].innerText;
+      var str = topTwoPages[spanIndexPointer].innerText;
       var indexOfSentenceEnd = findIndexOfSentenceEnd(str);
-      i++;
-    } while( indexOfSentenceEnd==-1 && i<content.length )
+      spanIndexPointer++;
+    } while( indexOfSentenceEnd==-1 && spanIndexPointer<topTwoPages.length )
+    // spanIndexPointer -> span next after span with .
 
-    if ( i<content.length ) { //. founded
+    if ( spanIndexPointer<topTwoPages.length ) { //. founded
       sentence += str.substring(indexOfSentenceEnd+1);
     } else {
       return -1;
     }
   } else {
-    var str = content[i].innerText;
+    var str = topTwoPages[spanIndexPointer].innerText;
     sentence += str;
-    i++;
+    spanIndexPointer++;
   }
-  var startOffsetTop = content[i-1].offsetTop;
+  var startOffsetTop = topTwoPages[spanIndexPointer-1].offsetTop;
+  const spot = {
+    top: 5,
+    left: 0,
+  };
+  scrollIntoView(topTwoPages[spanIndexPointer-1], spot, true);  
 
   //Sentence FINISH
   do {
-    var str = content[i].innerText;
-    var sameLine = (content[i].offsetTop==startOffsetTop);
+    var str = topTwoPages[spanIndexPointer].innerText;
+    var sameLine = (topTwoPages[spanIndexPointer].offsetTop==startOffsetTop);
     if( sameLine ) {
       sentence += " " + str;
-      i++;
+      spanIndexPointer++;
     } else {
       var indexOfSentenceEnd=findIndexOfSentenceEnd(str);
       if ( indexOfSentenceEnd==-1 ) {
         sentence += " " + str;
-        i++;
+        spanIndexPointer++;
       } else {
         sentence += " " + str.substring(0, indexOfSentenceEnd+1);
         break;
       }
     }
-  } while( i<content.length )
+  } while( spanIndexPointer<topTwoPages.length )
 
   console.log("## Text Content");
   console.log(sentence);
 
   var spanToScroll;
-  if ( i < textDivsFirstVisible.length )
-    spanToScroll = textDivsFirstVisible[i];
+  if ( spanIndexPointer < textDivsFirstVisible.length )
+    spanToScroll = textDivsFirstVisible[spanIndexPointer];
   else
-    spanToScroll = textDivsNext[ i - textDivsFirstVisible.length ];
+    spanToScroll = textDivsNext[ spanIndexPointer - textDivsFirstVisible.length ];
   return {sentence, spanToScroll};
 }
 
