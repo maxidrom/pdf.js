@@ -2715,34 +2715,53 @@ function findFirstVisibleSentence() {
     sentence += str;
     spanIndexPointer++;
   }
-  var startOffsetTop = topTwoPages[spanIndexPointer-1].offsetTop;
+  
   const spot = {
     top: 5,
     left: 0,
   };
-  scrollIntoView(topTwoPages[spanIndexPointer-1], spot, true);  
+  var startOffsetTop;
+  // if span with . ends with . then start is a next span
+  if ( (str.length-1)-indexOfSentenceEnd < 3 ){
+    startOffsetTop = topTwoPages[spanIndexPointer].offsetTop;
+    scrollIntoView(topTwoPages[spanIndexPointer], spot, true);
+  }
+  // else scroll to span with .
+  else {
+    startOffsetTop = topTwoPages[spanIndexPointer-1].offsetTop;
+    scrollIntoView(topTwoPages[spanIndexPointer-1], spot, true);
+  }
 
   //Sentence FINISH
   do {
     var str = topTwoPages[spanIndexPointer].innerText;
     var sameLine = (topTwoPages[spanIndexPointer].offsetTop==startOffsetTop);
+    // if end of sentence on the same line look for the next sentence
     if( sameLine ) {
       sentence += " " + str;
       spanIndexPointer++;
+    // if there is no . in the span look for next span
     } else {
       var indexOfSentenceEnd=findIndexOfSentenceEnd(str);
       if ( indexOfSentenceEnd==-1 ) {
         sentence += " " + str;
         spanIndexPointer++;
+    // sentence ended on another line  
       } else {
         sentence += " " + str.substring(0, indexOfSentenceEnd+1);
         break;
       }
     }
+  // until the end of two pages
   } while( spanIndexPointer<topTwoPages.length )
+  // pointer to span with .
 
   console.log("## Text Content");
   console.log(sentence);
+
+  // if span with . ends with . then start is a next scroll to the next span
+  if ( (str.length-1)-indexOfSentenceEnd < 3 )
+    spanIndexPointer++;
 
   var spanToScroll;
   if ( spanIndexPointer < textDivsFirstVisible.length )
