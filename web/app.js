@@ -28,6 +28,7 @@ import {
   parseQueryString,
   ProgressBar,
   RenderingStates,
+  scrollIntoView,
   ScrollMode,
   SidebarView,
   SpreadMode,
@@ -75,6 +76,7 @@ import { PDFViewer } from "./pdf_viewer.js";
 import { SecondaryToolbar } from "web-secondary_toolbar";
 import { Toolbar } from "web-toolbar";
 import { ViewHistory } from "./view_history.js";
+import { play } from "./audio.js"
 
 const FORCE_PAGES_LOADED_TIMEOUT = 10000; // ms
 const WHEEL_ZOOM_DISABLED_TIMEOUT = 1000; // ms
@@ -1953,6 +1955,9 @@ const PDFViewerApplication = {
       "switchannotationeditormode",
       webViewerSwitchAnnotationEditorMode
     );
+    eventBus._on("playaudio", webViewerPlayAudio);
+    eventBus._on("audioBack", webViewerAudioBack);
+    eventBus._on("audioForward", webViewerAudioForward);
     eventBus._on(
       "switchannotationeditorparams",
       webViewerSwitchAnnotationEditorParams
@@ -2078,6 +2083,7 @@ const PDFViewerApplication = {
     }
     const { eventBus, _boundEvents } = this;
 
+    //TODO: unbind play, back and forward audio
     eventBus._off("resize", webViewerResize);
     eventBus._off("hashchange", webViewerHashchange);
     eventBus._off("beforeprint", _boundEvents.beforePrint);
@@ -2606,6 +2612,167 @@ function webViewerSwitchSpreadMode(evt) {
 }
 function webViewerDocumentProperties() {
   PDFViewerApplication.pdfDocumentProperties?.open();
+}
+
+// get first visible span with text. If there is no visible text on this page find next text.
+// NOT USED
+function getSpanToPlay() {
+  const myPdfViewer = PDFViewerApplication.pdfViewer;
+  var myFirstVisibleTextIndex = myPdfViewer.getFirstVisibleTextSpanIndex();
+  var spanText = myPdfViewer._getVisiblePages().first.view.textLayer.textDivs[myFirstVisibleTextIndex]; //assuming that firat visibale page have visible text
+  return spanText;
+}
+
+function speak({sentence, spanToScroll}) {
+  var utterThis = new SpeechSynthesisUtterance(sentence);
+  utterThis.lang = "en-US";
+  utterThis.onend = () => {
+    console.log("End bliach!!!");
+    //scrolling
+    const spot = {
+      top: 5,
+      left: 0,
+    };
+    scrollIntoView(spanToScroll, spot, true);
+    //start speaking next sentence
+    webViewerPlayAudio();
+  }
+  window.speechSynthesis.speak(utterThis);
+}
+
+function findIndexOfAny(str, charList) {
+  for (let i = 0; i < str.length; i++) {
+    if (charList.includes(str[i])) {
+      return i;
+    }
+  }
+  return -1; // Return -1 if none of the characters are found
+}
+
+function findIndexOfSentenceEnd(str){
+  return findIndexOfAny(str, ['.', '!', '?']);
+}
+
+function isLetter(c) {
+  return c.toLowerCase() != c.toUpperCase();
+}
+
+function isSpanAlignedWithSentence(content, spanId){
+  var str = content[spanId].innerText;
+  var strInd = 0;
+  //findFirstLetter
+  while ( strInd<str.length && !isLetter(str[strInd]) ) strInd++;
+  if (strInd<str.length) return str[strInd] == str[strInd].toUpperCase();
+  else return false;
+}
+
+// Find toppest visible sentence on the page. If it is only one line sentence then
+// read next sentences untill it ends on another line. 
+// Returns sentence as a string and 
+// spanToScroll - span where sentence ends.
+function findFirstVisibleSentence() {
+  const firstVisiblePageIndex = PDFViewerApplication.pdfViewer._getVisiblePages().first.id;
+  var textDivsFirstVisible = PDFViewerApplication.pdfViewer._pages[firstVisiblePageIndex-1].textLayer.textDivs;
+  var textDivsNext = PDFViewerApplication.pdfViewer._pages[firstVisiblePageIndex].textLayer.textDivs;
+  const topTwoPages = textDivsFirstVisible.concat(textDivsNext);
+
+  //Sentence START
+  var sentence = '';
+  var spanIndexPointer = PDFViewerApplication.pdfViewer.getFirstVisibleTextSpanIndex();
+  if ( spanIndexPointer == -1 ) return -1;
+  // if span is not started with sentence find sentence start
+  if ( !isSpanAlignedWithSentence(topTwoPages, spanIndexPointer) ) {
+    // find first .
+    do {
+      var str = topTwoPages[spanIndexPointer].innerText;
+      var indexOfSentenceEnd = findIndexOfSentenceEnd(str);
+      spanIndexPointer++;
+    } while( indexOfSentenceEnd==-1 && spanIndexPointer<topTwoPages.length )
+    // spanIndexPointer -> span next after span with .
+
+    if ( spanIndexPointer<topTwoPages.length ) { //. founded
+      sentence += str.substring(indexOfSentenceEnd+1);
+    } else {
+      return -1;
+    }
+  } else {
+    var str = topTwoPages[spanIndexPointer].innerText;
+    sentence += str;
+    spanIndexPointer++;
+  }
+  
+  const spot = {
+    top: 5,
+    left: 0,
+  };
+  var startOffsetTop;
+  // if span with . ends with . then start is a next span
+  if ( (str.length-1)-indexOfSentenceEnd < 3 ){
+    startOffsetTop = topTwoPages[spanIndexPointer].offsetTop;
+    scrollIntoView(topTwoPages[spanIndexPointer], spot, true);
+  }
+  // else scroll to span with .
+  else {
+    startOffsetTop = topTwoPages[spanIndexPointer-1].offsetTop;
+    scrollIntoView(topTwoPages[spanIndexPointer-1], spot, true);
+  }
+
+  //Sentence FINISH
+  do {
+    var str = topTwoPages[spanIndexPointer].innerText;
+    var sameLine = (topTwoPages[spanIndexPointer].offsetTop==startOffsetTop);
+    // if end of sentence on the same line look for the next sentence
+    if( sameLine ) {
+      sentence += " " + str;
+      spanIndexPointer++;
+    // if there is no . in the span look for next span
+    } else {
+      var indexOfSentenceEnd=findIndexOfSentenceEnd(str);
+      if ( indexOfSentenceEnd==-1 ) {
+        sentence += " " + str;
+        spanIndexPointer++;
+    // sentence ended on another line  
+      } else {
+        sentence += " " + str.substring(0, indexOfSentenceEnd+1);
+        break;
+      }
+    }
+  // until the end of two pages
+  } while( spanIndexPointer<topTwoPages.length )
+  // pointer to span with .
+
+  console.log("## Text Content");
+  console.log(sentence);
+
+  // if span with . ends with . then start is a next scroll to the next span
+  if ( (str.length-1)-indexOfSentenceEnd < 3 )
+    spanIndexPointer++;
+
+  var spanToScroll;
+  if ( spanIndexPointer < textDivsFirstVisible.length )
+    spanToScroll = textDivsFirstVisible[spanIndexPointer];
+  else
+    spanToScroll = textDivsNext[ spanIndexPointer - textDivsFirstVisible.length ];
+  return {sentence, spanToScroll};
+}
+
+function webViewerPlayAudio() {
+  const synth = window.speechSynthesis;
+  if( !synth.speaking ) {
+    //const spanToPlay = myPdfViewer._getVisiblePages().first.view.textLayer.textDivs[firstVisibleTextIndex];
+    //scrollIntoView(spanToPlay, false, true);
+    speak(findFirstVisibleSentence());
+  } else {
+    synth.cancel();
+  }
+}
+
+function webViewerAudioBack() {
+  alert("Back");
+}
+
+function webViewerAudioForward() {
+  alert("Forward");
 }
 
 function webViewerFindFromUrlHash(evt) {

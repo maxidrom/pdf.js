@@ -39,6 +39,7 @@ import {
   version,
 } from "pdfjs-lib";
 import {
+  binarySearchFirstItem,
   DEFAULT_SCALE,
   DEFAULT_SCALE_DELTA,
   DEFAULT_SCALE_VALUE,
@@ -1662,6 +1663,24 @@ class PDFViewer {
       horizontal,
       rtl,
     });
+  }
+
+  getFirstVisibleTextSpanIndex() {
+    function isElementVisible(el) {
+      const holder = PDFViewerApplication.pdfViewer.container
+      const { top, bottom, height } = el.getBoundingClientRect()
+      const holderRect = holder.getBoundingClientRect()
+      /*return top <= holderRect.top
+        ? holderRect.top - top <= height
+        : bottom - holderRect.bottom <= height*/
+      return top >= holderRect.top && bottom <= holderRect.bottom
+    }
+
+    const items = this._getVisiblePages().first.view.textLayer.textDivs;
+    var index = 0;
+    while ( !isElementVisible(items[index]) && index<items.length ) index++;
+    if ( index<items.length ) return index;
+    else return -1;
   }
 
   cleanup() {
