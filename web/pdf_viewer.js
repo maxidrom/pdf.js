@@ -1672,7 +1672,7 @@ class PDFViewer {
     });
   }
 
-  getFirstVisibleTextSpanIndex() {
+  getFirstVisibleSpanIndex() {
     function isElementVisible(el) {
       const holder = PDFViewerApplication.pdfViewer.container
       const { top, bottom, height } = el.getBoundingClientRect()

@@ -2629,32 +2629,6 @@ function webViewerDocumentProperties() {
   PDFViewerApplication.pdfDocumentProperties?.open();
 }
 
-// get first visible span with text. If there is no visible text on this page find next text.
-// NOT USED
-function getSpanToPlay() {
-  const myPdfViewer = PDFViewerApplication.pdfViewer;
-  var myFirstVisibleTextIndex = myPdfViewer.getFirstVisibleTextSpanIndex();
-  var spanText = myPdfViewer._getVisiblePages().first.view.textLayer.textDivs[myFirstVisibleTextIndex]; //assuming that firat visibale page have visible text
-  return spanText;
-}
-
-function speak({sentence, spanToScroll}) {
-  var utterThis = new SpeechSynthesisUtterance(sentence);
-  utterThis.lang = "en-US";
-  utterThis.onend = () => {
-    console.log("End bliach!!!");
-    //scrolling
-    const spot = {
-      top: 5,
-      left: 0,
-    };
-    scrollIntoView(spanToScroll, spot, true);
-    //start speaking next sentence
-    webViewerPlayAudio();
-  }
-  window.speechSynthesis.speak(utterThis);
-}
-
 function findIndexOfAny(str, charList) {
   for (let i = 0; i < str.length; i++) {
     if (charList.includes(str[i])) {
@@ -2681,105 +2655,61 @@ function isSpanAlignedWithSentence(content, spanId){
   else return false;
 }
 
-// Find toppest visible sentence on the page. If it is only one line sentence then
-// read next sentences untill it ends on another line. 
-// Returns sentence as a string and 
-// spanToScroll - span where sentence ends.
-function findFirstVisibleSentence() {
-  const firstVisiblePageIndex = PDFViewerApplication.pdfViewer._getVisiblePages().first.id;
-  var textDivsFirstVisible = PDFViewerApplication.pdfViewer._pages[firstVisiblePageIndex-1].textLayer.textDivs;
-  var textDivsNext = PDFViewerApplication.pdfViewer._pages[firstVisiblePageIndex].textLayer.textDivs;
-  const topTwoPages = textDivsFirstVisible.concat(textDivsNext);
-
-  //Sentence START
-  var sentence = '';
-  var spanIndexPointer = PDFViewerApplication.pdfViewer.getFirstVisibleTextSpanIndex();
-  if ( spanIndexPointer == -1 ) return -1;
-  // if span is not started with sentence find sentence start
-  if ( !isSpanAlignedWithSentence(topTwoPages, spanIndexPointer) ) {
-    // find first .
-    do {
-      var str = topTwoPages[spanIndexPointer].innerText;
-      var indexOfSentenceEnd = findIndexOfSentenceEnd(str);
-      spanIndexPointer++;
-    } while( indexOfSentenceEnd==-1 && spanIndexPointer<topTwoPages.length )
-    // spanIndexPointer -> span next after span with .
-
-    if ( spanIndexPointer<topTwoPages.length ) { //. founded
-      sentence += str.substring(indexOfSentenceEnd+1);
-    } else {
-      return -1;
-    }
-  } else {
-    var str = topTwoPages[spanIndexPointer].innerText;
-    sentence += str;
-    spanIndexPointer++;
-  }
-  
-  const spot = {
-    top: 5,
-    left: 0,
-  };
-  var startOffsetTop;
-  // if span with . ends with . then start is a next span
-  if ( (str.length-1)-indexOfSentenceEnd < 3 ){
-    startOffsetTop = topTwoPages[spanIndexPointer].offsetTop;
-    scrollIntoView(topTwoPages[spanIndexPointer], spot, true);
-  }
-  // else scroll to span with .
-  else {
-    startOffsetTop = topTwoPages[spanIndexPointer-1].offsetTop;
-    scrollIntoView(topTwoPages[spanIndexPointer-1], spot, true);
-  }
-
-  //Sentence FINISH
-  do {
-    var str = topTwoPages[spanIndexPointer].innerText;
-    var sameLine = (topTwoPages[spanIndexPointer].offsetTop==startOffsetTop);
-    // if end of sentence on the same line look for the next sentence
-    if( sameLine ) {
-      sentence += " " + str;
-      spanIndexPointer++;
-    // if there is no . in the span look for next span
-    } else {
-      var indexOfSentenceEnd=findIndexOfSentenceEnd(str);
-      if ( indexOfSentenceEnd==-1 ) {
-        sentence += " " + str;
-        spanIndexPointer++;
-    // sentence ended on another line  
-      } else {
-        sentence += " " + str.substring(0, indexOfSentenceEnd+1);
-        break;
-      }
-    }
-  // until the end of two pages
-  } while( spanIndexPointer<topTwoPages.length )
-  // pointer to span with .
-
-  console.log("## Text Content");
-  console.log(sentence);
-
-  // if span with . ends with . then start is a next scroll to the next span
-  if ( (str.length-1)-indexOfSentenceEnd < 3 )
-    spanIndexPointer++;
-
-  var spanToScroll;
-  if ( spanIndexPointer < textDivsFirstVisible.length )
-    spanToScroll = textDivsFirstVisible[spanIndexPointer];
-  else
-    spanToScroll = textDivsNext[ spanIndexPointer - textDivsFirstVisible.length ];
-  return {sentence, spanToScroll};
-}
-
-function webViewerPlayAudio() {
+// position from which start to speak the text
+function webViewerPlayAudio(position=null) {
   const synth = window.speechSynthesis;
   if( !synth.speaking ) {
-    //const spanToPlay = myPdfViewer._getVisiblePages().first.view.textLayer.textDivs[firstVisibleTextIndex];
-    //scrollIntoView(spanToPlay, false, true);
-    speak(findFirstVisibleSentence());
+    var reader = new Reader();
+    reader.speak(); 
   } else {
     synth.cancel();
   }
+}
+
+class Pointer {
+  pageIndex;
+  spanIndex;
+  charIndex
+}
+
+class Reader {
+  pointer = new Pointer;
+  constructor() {
+    var pageIndex = PDFViewerApplication.pdfViewer._getVisiblePages().first.id;
+    var spanIndex = PDFViewerApplication.pdfViewer.getFirstVisibleSpanIndex();
+    this.pointer = {pageIndex: pageIndex, spanIndex: spanIndex, charIndex: 0};
+    //pointer -> start of first visible sentence
+  }
+
+  speak() {
+    var start = this.#findSentenceStart();
+    var finish = this.#findSentenceFinish();
+    var text = this.#gettext(start, finish);
+    var utterThis = new SpeechSynthesisUtterance(text);
+    utterThis.lang = "en-US";
+    utterThis.onend = () => {
+      console.log("End bliach!!!");
+      this.speak();
+    }
+    window.speechSynthesis.speak(utterThis);
+    //scroll to start
+  }
+
+  #findSentenceStart() {
+    // pointer -> sentence start
+    // return pointer
+  }
+
+  #findSentenceFinish() {
+    // pointer -> sentence finish
+    // return pointer
+  }
+
+  #gettext(start, finish) {
+    var text;
+    return text;
+  }
+
 }
 
 function webViewerAudioBack() {
