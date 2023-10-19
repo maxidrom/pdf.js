@@ -2662,9 +2662,6 @@ class Pointer {
   pageIndex; //starting from 0
   spanIndex;
   charIndex
-  inc(){
-
-  }
 }
 
 class Reader {
