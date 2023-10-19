@@ -2629,8 +2629,8 @@ function webViewerDocumentProperties() {
   PDFViewerApplication.pdfDocumentProperties?.open();
 }
 
-function findIndexOfAny(str, charList) {
-  for (let i = 0; i < str.length; i++) {
+function findIndexOfAny(str, charList, start) {
+  for (let i = start; i < str.length; i++) {
     if (charList.includes(str[i])) {
       return i;
     }
@@ -2638,21 +2638,13 @@ function findIndexOfAny(str, charList) {
   return -1; // Return -1 if none of the characters are found
 }
 
-function findIndexOfSentenceEnd(str){
-  return findIndexOfAny(str, ['.', '!', '?']);
+function findIndexOfSentenceEnd(pointer){
+  const str = PDFViewerApplication.pdfViewer._pages[pointer.pageIndex].textLayer.textDivs[pointer.spanIndex].innerText;
+  return findIndexOfAny(str, pointer.charIndex, ['.', '!', '?']);
 }
 
 function isLetter(c) {
   return c.toLowerCase() != c.toUpperCase();
-}
-
-function isSpanAlignedWithSentence(content, spanId){
-  var str = content[spanId].innerText;
-  var strInd = 0;
-  //findFirstLetter
-  while ( strInd<str.length && !isLetter(str[strInd]) ) strInd++;
-  if (strInd<str.length) return str[strInd] == str[strInd].toUpperCase();
-  else return false;
 }
 
 // position from which start to speak the text
@@ -2667,24 +2659,27 @@ function webViewerPlayAudio(position=null) {
 }
 
 class Pointer {
-  pageIndex;
+  pageIndex; //starting from 0
   spanIndex;
   charIndex
+  inc(){
+
+  }
 }
 
 class Reader {
   pointer = new Pointer;
   constructor() {
-    var pageIndex = PDFViewerApplication.pdfViewer._getVisiblePages().first.id;
-    var spanIndex = PDFViewerApplication.pdfViewer.getFirstVisibleSpanIndex();
-    this.pointer = {pageIndex: pageIndex, spanIndex: spanIndex, charIndex: 0};
-    //pointer -> start of first visible sentence
+    var { pageIndex, spanIndex } = PDFViewerApplication.pdfViewer.getFirstVisibleSpanIndex();
+    this.pointer = { pageIndex, spanIndex, charIndex: 0};
+    //pointer -> page and span of first visible span
   }
 
   speak() {
-    var start = this.#findSentenceStart();
-    var finish = this.#findSentenceFinish();
-    var text = this.#gettext(start, finish);
+    var start = this.pointer;
+    this.pointer = this.#findSentenceFinish();
+    var text = this.#gettext(start, this.pointer);
+    this.pointer.inc();
     var utterThis = new SpeechSynthesisUtterance(text);
     utterThis.lang = "en-US";
     utterThis.onend = () => {
@@ -2695,12 +2690,27 @@ class Reader {
     //scroll to start
   }
 
-  #findSentenceStart() {
-    // pointer -> sentence start
-    // return pointer
-  }
-
   #findSentenceFinish() {
+    // pointer -> start of first visible span
+    var charIndex;
+    const pageAndSpan = PDFViewerApplication.pdfViewer.forEachSpan(
+      this.pointer,
+      (pointer) => {
+        charIndex = findIndexOfSentenceEnd(pointer);
+        if ( charIndex != -1 )
+          return true;
+        else
+          return false;
+      }
+    );
+    if ( pageAndSpan!= -1 )
+      return {
+        pageIndex: pageAndSpan.pageIndex,
+        spanIndex: pageAndSpan.spanIndex,
+        charIndex: charIndex
+      };
+    else
+      return -1;
     // pointer -> sentence finish
     // return pointer
   }
