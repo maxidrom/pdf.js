@@ -2652,68 +2652,125 @@ function webViewerPlayAudio(position=null) {
   const synth = window.speechSynthesis;
   if( !synth.speaking ) {
     var reader = new Reader();
-    reader.speak(); 
+    if (reader.speak() == -1)
+      alert("No sentence to speak found. Please scroll to page with sentence.");
   } else {
     synth.cancel();
   }
 }
 
-class Pointer {
+class Iterator {
   pageIndex; //starting from 0
   spanIndex;
-  charIndex
+  charIndex;
+  next() {
+    var page = PDFViewerApplication.pdfViewer._pages[this.pageIndex];
+    var span = page.textLayer.textDivs[this.spanIndex].innerText;
+    if (this.charIndex < span.length-1) {
+      this.charIndex++;
+      return {value: span.charAt(this.charIndex), done: false};
+    } else {
+      if(this.spanIndex < page.textLayer.textDivs.length-1) {
+        this.spanIndex++;
+        this.charIndex = 0;
+        span = page.textLayer.textDivs[this.spanIndex].innerText;
+        return {value: span.charAt(this.charIndex), done: false};
+      } else {
+        if (this.pageIndex < PDFViewerApplication.pdfViewer._pages.length-1){
+          this.pageIndex++;
+          this.spanIndex = 0;
+          this.charIndex = 0;
+          page = PDFViewerApplication.pdfViewer._pages[this.pageIndex];
+          span = page.textLayer.textDivs[this.spanIndex].innerText;
+          return {value: span.charAt(this.charIndex), done: false};
+        } else return {value: null, done: true};
+      }
+    }
+  }
+
+
+  lessOrEq(b){
+    if (b.pageIndex < this.pageIndex) return false
+    else if (b.pageIndex == this.pageIndex)
+      if (b.spanIndex < this.spanIndex) return false
+        else if (b.spanIndex == this.spanIndex)
+          if (b.charIndex < this.charIndex) return false
+          else if (b.charIndex == this.charIndex) return true;
+
+    return true;
+  }
 }
 
 class Reader {
-  pointer = new Pointer;
+  it;
   constructor() {
+    this.it = new Iterator();
     var { pageIndex, spanIndex } = PDFViewerApplication.pdfViewer.getFirstVisibleSpanIndex();
-    this.pointer = { pageIndex, spanIndex, charIndex: 0};
+    this.it.pageIndex = pageIndex;
+    this.it.spanIndex = spanIndex;
+    this.it.charIndex = 0;
     //pointer -> page and span of first visible span
   }
 
   speak() {
-    var start = this.pointer;
-    this.pointer = this.#findSentenceFinish();
-    var text = this.#gettext(start, this.pointer);
-    this.pointer.inc();
-    var utterThis = new SpeechSynthesisUtterance(text);
-    utterThis.lang = "en-US";
-    utterThis.onend = () => {
-      console.log("End bliach!!!");
-      this.speak();
+    var start = {
+      pageIndex: this.it.pageIndex,
+      spanIndex: this.it.spanIndex,
+      charIndex: this.it.charIndex
+    };
+
+    if (this.#findSentenceFinish()) {
+      var text = this.#gettext(start, this.it);
+      var utterThis = new SpeechSynthesisUtterance(text);
+      utterThis.lang = "en-US";
+      utterThis.onend = () => {
+        console.log("End bliach!!!");
+        if (!this.it.next().done)
+          this.speak();
+      }
+      window.speechSynthesis.speak(utterThis);
+      var page = PDFViewerApplication.pdfViewer._pages[start.pageIndex];
+      var span = page.textLayer.textDivs[start.spanIndex];
+      scrollIntoView(span, {top:5, left: 0}, true);
+    } else {
+      return -1;
     }
-    window.speechSynthesis.speak(utterThis);
-    //scroll to start
+  }
+
+  isSentenceEnd(char) {
+    return ['.', '!', '?'].includes(char);
   }
 
   #findSentenceFinish() {
     // pointer -> start of first visible span
-    var charIndex;
-    const pageAndSpan = PDFViewerApplication.pdfViewer.forEachSpan(
-      this.pointer,
-      (pointer) => {
-        charIndex = findIndexOfSentenceEnd(pointer);
-        if ( charIndex != -1 )
-          return true;
-        else
-          return false;
-      }
-    );
-    if ( pageAndSpan!= -1 )
-      return {
-        pageIndex: pageAndSpan.pageIndex,
-        spanIndex: pageAndSpan.spanIndex,
-        charIndex: charIndex
-      };
-    else
-      return -1;
+    var result = this.it.next();
+    while (!result.done) {
+      if (this.isSentenceEnd(result.value))
+        return true;
+      result = this.it.next();
+    }
+    return false;
     // pointer -> sentence finish
     // return pointer
   }
 
+  getChar(it) {
+    var page = PDFViewerApplication.pdfViewer._pages[it.pageIndex];
+    var span = page.textLayer.textDivs[it.spanIndex].innerText;
+    var char = span.charAt(it.charIndex);
+    return char;
+  }
+
   #gettext(start, finish) {
-    var text;
+    var text = "";
+    var sentenceIt = new Iterator();
+    sentenceIt.pageIndex = start.pageIndex;
+    sentenceIt.spanIndex = start.spanIndex;
+    sentenceIt.charIndex = start.charIndex;
+    do {
+      text += this.getChar(sentenceIt);
+      var result = sentenceIt.next();
+    } while(sentenceIt.lessOrEq(finish) && !result.done);
     return text;
   }
 

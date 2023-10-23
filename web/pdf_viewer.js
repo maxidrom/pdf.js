@@ -1672,51 +1672,34 @@ class PDFViewer {
     });
   }
 
-  // spanIndexStart - span to start loop
-  // check - function if return true then break the loop and return pointer
-  forEachSpan(startPointer, check) {
-    if ( check(startPointer) )
-      return {
-        pageIndex: startPointer.pageIndex,
-        spanIndex: startPointer.spanIndex
-      };
-    for(const pageIndex of this._getVisiblePages().ids.values()) {
-      for(
-        var spanIndex=startPointer.spanIndex+1; 
-        spanIndex < this._pages[pageIndex-1].textLayer.textDivs.length; 
-        spanIndex++
-      ) {
-        if (check({
-            pageIndex: pageIndex-1,
-            spanIndex: spanIndex,
-            charindex: 0
-        }))
-          return {pageIndex: pageIndex-1, spanIndex};
-      }
-    }
-    return -1;
-  }
-
-  // pageIndex starting from 0
-  isElementVisible(pointer) {
-    const el = this._pages[pointer.pageIndex].
-               textLayer.textDivs[pointer.spanIndex];
-    const holder = PDFViewerApplication.pdfViewer.container;
-    const { top, bottom, height } = el.getBoundingClientRect();
-    const holderRect = holder.getBoundingClientRect();
-    return top >= holderRect.top && bottom <= holderRect.bottom
-  }
-  
   //  find first visible span
   //  return {pageIndex, spanIndex}
-  //  pageIndex - index from pdfViewer._pages[] of the page 
-  //  with first visible span
-  //  spanIndex - index of the first visible span
+  //    pageIndex - index from pdfViewer._pages[]
+  //      of the page with first visible span
+  //    spanIndex - index from pdfViewer._pages[pageIndex].textLayer.textDivs[]
+  //      of the first visible span
   getFirstVisibleSpanIndex() {
-    const pageAndSpan = this.forEachSpan( 0, (pointer) => {
-      return this.isElementVisible(pointer);
-    });
-    return pageAndSpan;
+    function isElementVisible(el) {
+      const holder = PDFViewerApplication.pdfViewer.container;
+      const { top, bottom, height } = el.getBoundingClientRect();
+      const holderRect = holder.getBoundingClientRect();
+      /*return top <= holderRect.top
+        ? holderRect.top - top <= height
+        : bottom - holderRect.bottom <= height*/
+      return top >= holderRect.top && bottom <= holderRect.bottom
+    }
+
+    const pagesIds = this._getVisiblePages().ids;
+    for(const pageIndex of pagesIds.values()) {
+      const spans = this._pages[pageIndex-1].textLayer.textDivs;
+      var spanIndex = 0;
+      while ( spanIndex<spans.length && !isElementVisible(spans[spanIndex]) ) spanIndex++;
+      if ( spanIndex<spans.length ) {
+        var pointer = { pageIndex: pageIndex-1, spanIndex }
+        return { pageIndex: pageIndex-1, spanIndex };
+      }
+    }
+      return -1;
   }
 
   cleanup() {
