@@ -2660,7 +2660,7 @@ function webViewerPlayAudio(position=null) {
 }
 
 class Iterator {
-  pageIndex; //starting from 0
+  pageIndex; // starting from 0
   spanIndex;
   charIndex;
   next() {
@@ -2668,13 +2668,13 @@ class Iterator {
     var span = page.textLayer.textDivs[this.spanIndex].innerText;
     if (this.charIndex < span.length-1) {
       this.charIndex++;
-      return {value: span.charAt(this.charIndex), done: false};
+      return {value: span.charAt(this.charIndex), newSpan:false, done:false};
     } else {
       if(this.spanIndex < page.textLayer.textDivs.length-1) {
         this.spanIndex++;
         this.charIndex = 0;
         span = page.textLayer.textDivs[this.spanIndex].innerText;
-        return {value: span.charAt(this.charIndex), done: false};
+        return {value: span.charAt(this.charIndex), newSpan:true, done: false};
       } else {
         if (this.pageIndex < PDFViewerApplication.pdfViewer._pages.length-1){
           this.pageIndex++;
@@ -2682,12 +2682,11 @@ class Iterator {
           this.charIndex = 0;
           page = PDFViewerApplication.pdfViewer._pages[this.pageIndex];
           span = page.textLayer.textDivs[this.spanIndex].innerText;
-          return {value: span.charAt(this.charIndex), done: false};
-        } else return {value: null, done: true};
+          return {value: span.charAt(this.charIndex), newSpan:true, done: false};
+        } else return {value: null, newSpan:false, done: true};
       }
     }
   }
-
 
   lessOrEq(b){
     if (b.pageIndex < this.pageIndex) return false
@@ -2767,7 +2766,10 @@ class Reader {
     sentenceIt.pageIndex = start.pageIndex;
     sentenceIt.spanIndex = start.spanIndex;
     sentenceIt.charIndex = start.charIndex;
+    var result = {value: null, newSpan:false, done: false};
     do {
+      if (result.newSpan)
+        text += " ";
       text += this.getChar(sentenceIt);
       var result = sentenceIt.next();
     } while(sentenceIt.lessOrEq(finish) && !result.done);
