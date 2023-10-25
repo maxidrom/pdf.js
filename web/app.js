@@ -2448,24 +2448,23 @@ function saveLocationOnServer(location) {
   const bookPath = urlParams.get('file');
 
   // get book name without file extension ex.g. "Turn%20The%20Ship%20Arround"
-  var bookName = bookPath.substring(
-    bookPath.lastIndexOf("/") + 1, 
+  let bookName = bookPath.substring(
+    bookPath.lastIndexOf("/") + 1,
     bookPath.lastIndexOf(".")
   );
 
   const email = bookPath.match(new RegExp("private/(.*)/"))[1];
-  
+
   // call backend script which updates params on server
-  const updateCurrentPageUrl = 
+  const updateCurrentPageUrl =
     "https://bulba.site/lib2/engine/back/update-current-page.php?" + //TODO: fix hardcoded lib2 path
     "book=" + bookName + 
     "&current-page=" + location.pageNumber + 
     "&scroll=" + location.top +
     "&email=" + email;
-  fetch(updateCurrentPageUrl, {method: "GET"})
-    .then((responce) => {
-      console.log(responce);
-    });
+  fetch(updateCurrentPageUrl, { method: "GET" }).then(responce => {
+    console.log(responce);
+  });
 }
 
 function webViewerScrollModeChanged(evt) {
@@ -2629,31 +2628,14 @@ function webViewerDocumentProperties() {
   PDFViewerApplication.pdfDocumentProperties?.open();
 }
 
-function findIndexOfAny(str, charList, start) {
-  for (let i = start; i < str.length; i++) {
-    if (charList.includes(str[i])) {
-      return i;
-    }
-  }
-  return -1; // Return -1 if none of the characters are found
-}
-
-function findIndexOfSentenceEnd(pointer){
-  const str = PDFViewerApplication.pdfViewer._pages[pointer.pageIndex].textLayer.textDivs[pointer.spanIndex].innerText;
-  return findIndexOfAny(str, pointer.charIndex, ['.', '!', '?']);
-}
-
-function isLetter(c) {
-  return c.toLowerCase() != c.toUpperCase();
-}
-
 // position from which start to speak the text
-function webViewerPlayAudio(position=null) {
+function webViewerPlayAudio(position = null) {
   const synth = window.speechSynthesis;
-  if( !synth.speaking ) {
-    var reader = new Reader();
-    if (reader.speak() == -1)
+  if (!synth.speaking) {
+    const reader = new Reader();
+    if (!reader.speak()) {
       alert("No sentence to speak found. Please scroll to page with sentence.");
+    }
   } else {
     synth.cancel();
   }
@@ -2661,121 +2643,153 @@ function webViewerPlayAudio(position=null) {
 
 class Iterator {
   pageIndex; // starting from 0
+
   spanIndex;
+
   charIndex;
+
   next() {
-    var page = PDFViewerApplication.pdfViewer._pages[this.pageIndex];
-    var span = page.textLayer.textDivs[this.spanIndex].innerText;
-    if (this.charIndex < span.length-1) {
+    let page = PDFViewerApplication.pdfViewer._pages[this.pageIndex];
+    let span = page.textLayer.textDivs[this.spanIndex].innerText;
+    if (this.charIndex < span.length - 1) {
       this.charIndex++;
-      return {value: span.charAt(this.charIndex), newSpan:false, done:false};
-    } else {
-      if(this.spanIndex < page.textLayer.textDivs.length-1) {
-        this.spanIndex++;
-        this.charIndex = 0;
-        span = page.textLayer.textDivs[this.spanIndex].innerText;
-        return {value: span.charAt(this.charIndex), newSpan:true, done: false};
-      } else {
-        if (this.pageIndex < PDFViewerApplication.pdfViewer._pages.length-1){
-          this.pageIndex++;
-          this.spanIndex = 0;
-          this.charIndex = 0;
-          page = PDFViewerApplication.pdfViewer._pages[this.pageIndex];
-          span = page.textLayer.textDivs[this.spanIndex].innerText;
-          return {value: span.charAt(this.charIndex), newSpan:true, done: false};
-        } else return {value: null, newSpan:false, done: true};
-      }
+      return {
+        newSpan: false,
+        done: false,
+      };
     }
+    if (this.spanIndex < page.textLayer.textDivs.length - 1) {
+      this.spanIndex++;
+      this.charIndex = 0;
+      span = page.textLayer.textDivs[this.spanIndex].innerText;
+      return {
+        newSpan: true,
+        done: false,
+      };
+    }
+    if (this.pageIndex < PDFViewerApplication.pdfViewer._pages.length - 1) {
+      this.pageIndex++;
+      this.spanIndex = 0;
+      this.charIndex = 0;
+      page = PDFViewerApplication.pdfViewer._pages[this.pageIndex];
+      span = page.textLayer.textDivs[this.spanIndex].innerText;
+      return {
+        newSpan: true,
+        done: false,
+      };
+    }
+    return {
+      newSpan: false,
+      done: true,
+    };
   }
 
-  lessOrEq(b){
-    if (b.pageIndex < this.pageIndex) return false
-    else if (b.pageIndex == this.pageIndex)
-      if (b.spanIndex < this.spanIndex) return false
-        else if (b.spanIndex == this.spanIndex)
-          if (b.charIndex < this.charIndex) return false
-          else if (b.charIndex == this.charIndex) return true;
-
-    return true;
+  // compare this with b
+  // return
+  // -1 if this < b
+  // 0 if this == b
+  // +1 if this > b
+  cmp(b) {
+    if (this.pageIndex < b.pageIndex) {
+      return -1;
+    }
+    if (this.pageIndex > b.pageIndex) {
+      return 1;
+    }
+    if (this.spanIndex < b.spanIndex) {
+      return -1;
+    }
+    if (this.spanIndex > b.spanIndex) {
+      return 1;
+    }
+    if (this.charIndex < b.charIndex) {
+      return -1;
+    }
+    if (this.charIndex > b.charIndex) {
+      return 1;
+    }
+    return 0;
   }
 }
 
 class Reader {
   it;
+
   constructor() {
     this.it = new Iterator();
-    var { pageIndex, spanIndex } = PDFViewerApplication.pdfViewer.getFirstVisibleSpanIndex();
+    const { pageIndex, spanIndex } =
+      PDFViewerApplication.pdfViewer.getFirstVisibleSpanIndex();
     this.it.pageIndex = pageIndex;
     this.it.spanIndex = spanIndex;
     this.it.charIndex = 0;
-    //pointer -> page and span of first visible span
+    // pointer -> page and span of first visible span
   }
 
   speak() {
-    var start = {
+    const start = {
       pageIndex: this.it.pageIndex,
       spanIndex: this.it.spanIndex,
-      charIndex: this.it.charIndex
+      charIndex: this.it.charIndex,
     };
 
-    if (this.#findSentenceFinish()) {
-      var text = this.#gettext(start, this.it);
-      var utterThis = new SpeechSynthesisUtterance(text);
-      utterThis.lang = "en-US";
-      utterThis.onend = () => {
-        console.log("End bliach!!!");
-        if (!this.it.next().done)
-          this.speak();
+    this.#findSentenceFinish();
+    const text = this.#gettext(start, this.it);
+    const utterThis = new SpeechSynthesisUtterance(text);
+    utterThis.lang = "en-US";
+    utterThis.onend = () => {
+      console.log("End bliach!!!");
+      if (!this.it.next().done) {
+        this.speak();
       }
-      window.speechSynthesis.speak(utterThis);
-      var page = PDFViewerApplication.pdfViewer._pages[start.pageIndex];
-      var span = page.textLayer.textDivs[start.spanIndex];
-      scrollIntoView(span, {top:5, left: 0}, true);
-    } else {
-      return -1;
-    }
+    };
+    window.speechSynthesis.speak(utterThis);
+    const page = PDFViewerApplication.pdfViewer._pages[start.pageIndex];
+    const span = page.textLayer.textDivs[start.spanIndex];
+    scrollIntoView(span, { top: 5, left: 0 }, true);
+    return true;
   }
 
   isSentenceEnd(char) {
-    return ['.', '!', '?'].includes(char);
+    return [".", "!", "?"].includes(char);
   }
 
+  // move this.it to sentence finish
   #findSentenceFinish() {
-    // pointer -> start of first visible span
-    var result = this.it.next();
-    while (!result.done) {
-      if (this.isSentenceEnd(result.value))
-        return true;
-      result = this.it.next();
+    let next = {
+      newSpan: false,
+      done: false,
+    };
+    while (!this.isSentenceEnd(this.getChar(this.it)) && !next.done) {
+      next = this.it.next();
     }
-    return false;
-    // pointer -> sentence finish
-    // return pointer
   }
 
   getChar(it) {
-    var page = PDFViewerApplication.pdfViewer._pages[it.pageIndex];
-    var span = page.textLayer.textDivs[it.spanIndex].innerText;
-    var char = span.charAt(it.charIndex);
+    const page = PDFViewerApplication.pdfViewer._pages[it.pageIndex];
+    const span = page.textLayer.textDivs[it.spanIndex].innerText;
+    const char = span.charAt(it.charIndex);
     return char;
   }
 
   #gettext(start, finish) {
-    var text = "";
-    var sentenceIt = new Iterator();
+    let text = "";
+    const sentenceIt = new Iterator();
     sentenceIt.pageIndex = start.pageIndex;
     sentenceIt.spanIndex = start.spanIndex;
     sentenceIt.charIndex = start.charIndex;
-    var result = {value: null, newSpan:false, done: false};
-    do {
-      if (result.newSpan)
+    let next = {
+      newSpan: false,
+      done: false,
+    };
+    while (sentenceIt.cmp(finish) < 1 && !next.done) {
+      if (next.newSpan) {
         text += " ";
+      }
       text += this.getChar(sentenceIt);
-      var result = sentenceIt.next();
-    } while(sentenceIt.lessOrEq(finish) && !result.done);
+      next = sentenceIt.next();
+    }
     return text;
   }
-
 }
 
 function webViewerAudioBack() {
