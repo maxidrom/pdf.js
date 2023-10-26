@@ -909,13 +909,13 @@ body {
   mask-image: var(--toolbarButton-play);
 }
 
-#audioBack::before {
+/*#audioBack::before {
   mask-image: var(--findbarButton-previous-icon);
 }
 
 #audioForward::before {
   mask-image: var(--findbarButton-next-icon);
-}
+}*/
 
 #presentationMode::before {
   mask-image: var(--toolbarButton-presentationMode-icon);
