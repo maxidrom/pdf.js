@@ -103,14 +103,6 @@ const defaultOptions = {
     value: typeof PDFJSDev === "undefined" || !PDFJSDev.test("CHROME"),
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
   },
-  enableStampEditor: {
-    // We'll probably want to make some experiments before enabling this
-    // in Firefox release, but it has to be temporary.
-    // TODO: remove it when unnecessary.
-    /** @type {boolean} */
-    value: true,
-    kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
-  },
   externalLinkRel: {
     /** @type {string} */
     value: "noopener noreferrer nofollow",
@@ -402,7 +394,21 @@ class AppOptions {
     userOptions[name] = value;
   }
 
-  static setAll(options) {
+  static setAll(options, init = false) {
+    if ((typeof PDFJSDev === "undefined" || PDFJSDev.test("GENERIC")) && init) {
+      if (this.get("disablePreferences")) {
+        // Give custom implementations of the default viewer a simpler way to
+        // opt-out of having the `Preferences` override existing `AppOptions`.
+        return;
+      }
+      if (Object.keys(userOptions).length) {
+        console.warn(
+          "setAll: The Preferences may override manually set AppOptions; " +
+            'please use the "disablePreferences"-option in order to prevent that.'
+        );
+      }
+    }
+
     for (const name in options) {
       userOptions[name] = options[name];
     }
@@ -411,12 +417,6 @@ class AppOptions {
   static remove(name) {
     delete userOptions[name];
   }
-}
-
-if (typeof PDFJSDev === "undefined" || PDFJSDev.test("GENERIC")) {
-  AppOptions._hasUserOptions = function () {
-    return Object.keys(userOptions).length > 0;
-  };
 }
 
 export { AppOptions, compatibilityParams, OptionKind };
