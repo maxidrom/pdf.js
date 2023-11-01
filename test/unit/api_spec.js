@@ -56,6 +56,8 @@ import { GlobalImageCache } from "../../src/core/image_utils.js";
 import { GlobalWorkerOptions } from "../../src/display/worker_options.js";
 import { Metadata } from "../../src/display/metadata.js";
 
+const WORKER_SRC = "../../build/generic/build/pdf.worker.mjs";
+
 describe("api", function () {
   const basicApiFileName = "basicapi.pdf";
   const basicApiFileLength = 105779; // bytes
@@ -914,7 +916,8 @@ describe("api", function () {
       }
 
       GlobalWorkerOptions.workerPort = new Worker(
-        new URL("../../build/generic/build/pdf.worker.js", window.location)
+        new URL(WORKER_SRC, window.location),
+        { type: "module" }
       );
 
       const loadingTask1 = getDocument(basicApiGetDocumentParams);
@@ -934,7 +937,8 @@ describe("api", function () {
       }
 
       GlobalWorkerOptions.workerPort = new Worker(
-        new URL("../../build/generic/build/pdf.worker.js", window.location)
+        new URL(WORKER_SRC, window.location),
+        { type: "module" }
       );
 
       const loadingTask1 = getDocument(basicApiGetDocumentParams);
@@ -963,7 +967,8 @@ describe("api", function () {
         }
 
         GlobalWorkerOptions.workerPort = new Worker(
-          new URL("../../build/generic/build/pdf.worker.js", window.location)
+          new URL(WORKER_SRC, window.location),
+          { type: "module" }
         );
 
         const loadingTask = getDocument(basicApiGetDocumentParams);
@@ -2297,7 +2302,7 @@ describe("api", function () {
       await loadingTask.destroy();
     });
 
-    it("write a new stamp annotation in a tagged pdf, save and check that the structure tree", async function () {
+    it("write a new stamp annotation in a tagged pdf, save and check the structure tree", async function () {
       if (isNodeJS) {
         pending("Cannot create a bitmap from Node.js.");
       }
@@ -2344,6 +2349,76 @@ describe("api", function () {
           },
         ],
         alt: "Hello World",
+      });
+
+      await loadingTask.destroy();
+    });
+
+    it("write a new stamp annotation in a tagged pdf, save, repeat and check the structure tree", async function () {
+      if (isNodeJS) {
+        pending("Cannot create a bitmap from Node.js.");
+      }
+
+      const TEST_IMAGES_PATH = "../images/";
+      const filename = "firefox_logo.png";
+      const path = new URL(TEST_IMAGES_PATH + filename, window.location).href;
+
+      const response = await fetch(path);
+      const blob = await response.blob();
+      let loadingTask, pdfDoc;
+      let data = buildGetDocumentParams("empty.pdf");
+
+      for (let i = 1; i <= 2; i++) {
+        const bitmap = await createImageBitmap(blob);
+        loadingTask = getDocument(data);
+        pdfDoc = await loadingTask.promise;
+        pdfDoc.annotationStorage.setValue("pdfjs_internal_editor_0", {
+          annotationType: AnnotationEditorType.STAMP,
+          rect: [10 * i, 10 * i, 20 * i, 20 * i],
+          rotation: 0,
+          bitmap,
+          bitmapId: "im1",
+          pageIndex: 0,
+          structTreeParentId: null,
+          accessibilityData: {
+            type: "Figure",
+            alt: `Hello World ${i}`,
+          },
+        });
+
+        data = await pdfDoc.saveDocument();
+        await loadingTask.destroy();
+      }
+
+      loadingTask = getDocument(data);
+      pdfDoc = await loadingTask.promise;
+      const page = await pdfDoc.getPage(1);
+      const tree = await page.getStructTree();
+
+      expect(tree).toEqual({
+        children: [
+          {
+            role: "Figure",
+            children: [
+              {
+                type: "annotation",
+                id: "pdfjs_internal_id_18R",
+              },
+            ],
+            alt: "Hello World 1",
+          },
+          {
+            role: "Figure",
+            children: [
+              {
+                type: "annotation",
+                id: "pdfjs_internal_id_26R",
+              },
+            ],
+            alt: "Hello World 2",
+          },
+        ],
+        role: "Root",
       });
 
       await loadingTask.destroy();
@@ -2784,6 +2859,29 @@ describe("api", function () {
       expect(filename).toEqual("man.pdf");
       expect(content instanceof Uint8Array).toEqual(true);
       expect(content.length).toEqual(4508);
+
+      expect(annotations[0].attachmentDest).toEqual('[-1,{"name":"Fit"}]');
+
+      await loadingTask.destroy();
+    });
+
+    it("gets annotations containing GoToE action with destination (issue 17056)", async function () {
+      const loadingTask = getDocument(buildGetDocumentParams("issue17056.pdf"));
+      const pdfDoc = await loadingTask.promise;
+      const pdfPage = await pdfDoc.getPage(1);
+
+      const annotations = await pdfPage.getAnnotations();
+      expect(annotations.length).toEqual(30);
+
+      const { annotationType, attachment, attachmentDest } = annotations[0];
+      expect(annotationType).toEqual(AnnotationType.LINK);
+
+      const { filename, content } = attachment;
+      expect(filename).toEqual("destination-doc.pdf");
+      expect(content instanceof Uint8Array).toEqual(true);
+      expect(content.length).toEqual(10305);
+
+      expect(attachmentDest).toEqual('[0,{"name":"Fit"}]');
 
       await loadingTask.destroy();
     });
