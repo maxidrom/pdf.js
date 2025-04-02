@@ -1,9 +1,10 @@
 <?php
     /**
-     * https://bulba.site/lib2/engine/back/get-deadline.php?book=PMBOKGuideFourthEdition_protected
+     * https://bulba.site/lib2/engine/back/get-deadline.php?book=The%20Lean%20Startup%20-%20Erick%20Ries
      */
     $book = $_GET["book"];
     
+    //$_SESSION['email'] = "prefixoid@gmail.com"; //DEBUG
     //read email
     session_start();
     if (isset($_SESSION['email'])) {
@@ -24,5 +25,5 @@
         $deadline = $date->format("d-m-Y");
     }
 
-    echo json_encode(array("value" => $value));
+    echo json_encode(array("deadline" => $deadline));
 ?>
